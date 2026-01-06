@@ -105,8 +105,13 @@ async function renderLoop(timestamp) {
                 if (poses && poses.length > 0) {
                     lastPose = poses[0];
                     
-                    // DELEGATE TO EXERCISE MANAGER
-                    // This is where the magic happens
+                    // --- UPDATED LOGIC HERE ---
+                    // 1. Update Routine Timer (if active)
+                    if (typeof RoutineSystem !== 'undefined') {
+                        RoutineSystem.update();
+                    }
+                    
+                    // 2. Update Exercise Logic
                     const activeExercise = ExerciseManager.getCurrent();
                     activeExercise.update(lastPose);
                 }
@@ -185,18 +190,35 @@ function drawUI() {
     ctx.font = "bold 30px Arial";
     ctx.fillStyle = "white";
     
-    // 1. Exercise Name
+    // 1. Exercise Name / Routine Label
     ctx.font = "20px Arial";
     ctx.fillStyle = "#AAAAAA";
-    ctx.fillText(ExerciseManager.currentExerciseName.toUpperCase(), 20, 30);
+    
+    // --- UPDATED TITLE LOGIC ---
+    let title = ExerciseManager.currentName.toUpperCase();
+    // If we are in a routine (Warmup/Stretch), show the specific step label
+    if (typeof RoutineSystem !== 'undefined' && RoutineSystem.active && RoutineSystem.queue[RoutineSystem.index]) {
+        title = RoutineSystem.queue[RoutineSystem.index].label.toUpperCase();
+    }
+    ctx.fillText(title, 20, 30);
 
     // 2. Count / Time
     ctx.font = "bold 40px Arial";
     ctx.fillStyle = "#FFFFFF";
     
-    let displayValue = exercise.count;
-    if (exercise.type === 'time') {
-        displayValue += " s";
+    // --- UPDATED DISPLAY VALUE LOGIC ---
+    let displayValue;
+    
+    if (typeof RoutineSystem !== 'undefined' && RoutineSystem.active) {
+        // If in routine, show TIMER
+        displayValue = RoutineSystem.timer + " s";
+        ctx.fillStyle = "#00FFFF"; // Cyan color for timer
+    } else {
+        // Normal Mode
+        displayValue = exercise.count;
+        if (exercise.type === 'time') {
+            displayValue += " s";
+        }
     }
     ctx.fillText(displayValue, 20, 80);
 
@@ -204,7 +226,7 @@ function drawUI() {
     ctx.font = "24px Arial";
     
     // Color code feedback
-    if (exercise.feedback.includes("Good") || exercise.feedback.includes("Hold")) {
+    if (exercise.feedback.includes("Good") || exercise.feedback.includes("Hold") || exercise.feedback.includes("Burn")) {
         ctx.fillStyle = "#00FF00"; // Green
     } else {
         ctx.fillStyle = "#FFCC00"; // Orange/Yellow warning

@@ -1,9 +1,21 @@
-/* exercises.js */
+/* ======================================================================
+   SECTION 1: CONFIGURATION & MATH UTILITIES
+   ====================================================================== */
 
-/**
- * UTILITY FUNCTIONS
- * Helper math for geometry and keypoint selection
- */
+const CONFIG = {
+    videoWidth: 640,
+    videoHeight: 480,
+    aiFps: 10, // Run AI 10 times per second (Performance mode)
+};
+
+// Global State
+let detector;
+let video;
+let canvas, ctx;
+let lastVideoTime = 0;
+let lastAiTime = 0;
+let lastPose = null;
+
 const Utils = {
     // Calculate angle between three points (A-B-C)
     getAngle: (a, b, c) => {
@@ -24,13 +36,22 @@ const Utils = {
         return leftConf > rightConf ? "left" : "right";
     },
 
-    // Get keypoints for the specific side (e.g., Left Knee vs Right Knee)
+    // Get keypoints for the specific side
     getSidePoints: (pose, side) => {
         return side === "left" ? 
         { s: pose.keypoints[5], e: pose.keypoints[7], w: pose.keypoints[9], h: pose.keypoints[11], k: pose.keypoints[13], a: pose.keypoints[15] } : 
         { s: pose.keypoints[6], e: pose.keypoints[8], w: pose.keypoints[10], h: pose.keypoints[12], k: pose.keypoints[14], a: pose.keypoints[16] };
+    },
+
+    // Check if keypoints have enough confidence to process
+    isValid: (points) => {
+        return points.every(p => p.score > 0.3);
     }
 };
+
+/* ======================================================================
+   SECTION 2: EXERCISE LIBRARY (Logic)
+   ====================================================================== */
 
 /**
  * BASE EXERCISE CLASS
@@ -47,17 +68,15 @@ class Exercise {
         this.count = 0;
         this.status = "start";
         this.feedback = "Get in position";
+        this.startTime = null;
     }
     
-    // Check if keypoints have enough confidence to process
     isValid(points) {
-        return points.every(p => p.score > 0.3);
+        return Utils.isValid(points);
     }
 }
 
-/* ======================================================================
-   CATEGORY A: HINGE & SQUAT MOVEMENTS (Angle Tracking)
-   ====================================================================== */
+// --- CATEGORY A: HINGE & SQUAT MOVEMENTS ---
 
 // 1. SQUATS
 class Squat extends Exercise {
@@ -66,17 +85,13 @@ class Squat extends Exercise {
         const p = Utils.getSidePoints(pose, side);
         if (!this.isValid([p.h, p.k, p.a])) return;
 
-        const angle = Utils.getAngle(p.h, p.k, p.a); // Hip-Knee-Ankle
+        const angle = Utils.getAngle(p.h, p.k, p.a);
 
         if (angle > 165) {
-            if (this.status === "down") {
-                this.count++;
-                this.feedback = "Good Rep!";
-            }
+            if (this.status === "down") { this.count++; this.feedback = "Good Rep!"; }
             this.status = "up";
         } else if (angle < 100) {
-            this.status = "down";
-            this.feedback = "Deep enough!";
+            this.status = "down"; this.feedback = "Deep enough!";
         } else if (angle < 140 && this.status === "up") {
             this.feedback = "Lower...";
         }
@@ -90,17 +105,13 @@ class PushUp extends Exercise {
         const p = Utils.getSidePoints(pose, side);
         if (!this.isValid([p.s, p.e, p.w])) return;
 
-        const angle = Utils.getAngle(p.s, p.e, p.w); // Shoulder-Elbow-Wrist
+        const angle = Utils.getAngle(p.s, p.e, p.w);
 
         if (angle > 160) {
-            if (this.status === "down") {
-                this.count++;
-                this.feedback = "Up!";
-            }
+            if (this.status === "down") { this.count++; this.feedback = "Up!"; }
             this.status = "up";
         } else if (angle < 90) {
-            this.status = "down";
-            this.feedback = "Good depth!";
+            this.status = "down"; this.feedback = "Good depth!";
         }
     }
 }
@@ -108,31 +119,23 @@ class PushUp extends Exercise {
 // 3. LUNGES
 class Lunge extends Exercise {
     update(pose) {
-        // Detects the leg that is FORWARD. 
-        // Logic: Forward leg knee bends to ~90, Back leg drops.
         const left = Utils.getSidePoints(pose, "left");
         const right = Utils.getSidePoints(pose, "right");
         
-        // Use the side with the sharper knee angle as the "working" leg
         const leftAngle = Utils.getAngle(left.h, left.k, left.a);
         const rightAngle = Utils.getAngle(right.h, right.k, right.a);
-        
         const workingAngle = (leftAngle < rightAngle) ? leftAngle : rightAngle;
 
         if (workingAngle > 160) {
-            if (this.status === "down") {
-                this.count++;
-                this.feedback = "Nice lunge!";
-            }
+            if (this.status === "down") { this.count++; this.feedback = "Nice lunge!"; }
             this.status = "up";
         } else if (workingAngle < 100) {
-            this.status = "down";
-            this.feedback = "Hold...";
+            this.status = "down"; this.feedback = "Hold...";
         }
     }
 }
 
-// 4. DIPS (Tricep Dips)
+// 4. DIPS
 class Dip extends Exercise {
     update(pose) {
         const side = Utils.getDominantSide(pose);
@@ -141,16 +144,11 @@ class Dip extends Exercise {
 
         const armAngle = Utils.getAngle(p.s, p.e, p.w);
 
-        // Arms straight vs Arms bent
         if (armAngle > 160) {
-            if (this.status === "down") {
-                this.count++;
-                this.feedback = "Push up!";
-            }
+            if (this.status === "down") { this.count++; this.feedback = "Push up!"; }
             this.status = "up";
         } else if (armAngle < 100) {
-            this.status = "down";
-            this.feedback = "Deep...";
+            this.status = "down"; this.feedback = "Deep...";
         }
     }
 }
@@ -162,18 +160,12 @@ class SitUp extends Exercise {
         const p = Utils.getSidePoints(pose, side);
         if (!this.isValid([p.s, p.h, p.k])) return;
 
-        // Angle between Shoulder-Hip-Knee
         const torsoAngle = Utils.getAngle(p.s, p.h, p.k);
 
-        // 180 is lying flat, < 80 is sitting up
-        if (torsoAngle > 120) { // adjusted for user flexibility
-            this.status = "down";
-            this.feedback = "Crunch up!";
+        if (torsoAngle > 120) {
+            this.status = "down"; this.feedback = "Crunch up!";
         } else if (torsoAngle < 60) {
-            if (this.status === "down") {
-                this.count++;
-                this.feedback = "Great core work!";
-            }
+            if (this.status === "down") { this.count++; this.feedback = "Great core work!"; }
             this.status = "up";
         }
     }
@@ -186,17 +178,12 @@ class LegRaise extends Exercise {
         const p = Utils.getSidePoints(pose, side);
         if (!this.isValid([p.s, p.h, p.k])) return;
 
-        // Angle between Shoulder-Hip-Knee (legs moving relative to torso)
         const hipAngle = Utils.getAngle(p.s, p.h, p.k);
 
         if (hipAngle > 170) {
-            this.status = "down";
-            this.feedback = "Lift legs!";
+            this.status = "down"; this.feedback = "Lift legs!";
         } else if (hipAngle < 100) {
-            if (this.status === "down") {
-                this.count++;
-                this.feedback = "Control down...";
-            }
+            if (this.status === "down") { this.count++; this.feedback = "Control down..."; }
             this.status = "up";
         }
     }
@@ -207,19 +194,12 @@ class DonkeyKick extends Exercise {
     update(pose) {
         const side = Utils.getDominantSide(pose);
         const p = Utils.getSidePoints(pose, side);
-        
-        // Track Hip Extension: Angle Shoulder-Hip-Knee
-        // 90 degrees is starting (all fours), 160+ is leg extended back
         const hipAngle = Utils.getAngle(p.s, p.h, p.k);
 
         if (hipAngle < 100) {
-            this.status = "in";
-            this.feedback = "Kick back!";
+            this.status = "in"; this.feedback = "Kick back!";
         } else if (hipAngle > 160) {
-            if (this.status === "in") {
-                this.count++;
-                this.feedback = "Squeeze glute!";
-            }
+            if (this.status === "in") { this.count++; this.feedback = "Squeeze glute!"; }
             this.status = "out";
         }
     }
@@ -228,56 +208,38 @@ class DonkeyKick extends Exercise {
 // 8. CALF RAISES
 class CalfRaise extends Exercise {
     update(pose) {
-        // Hard to detect toe angle. Detecting Vertical Rise of Eye/Nose
-        // Requires user to stand relatively still horizontally
         const nose = pose.keypoints[0];
-        
-        if (!this.baseY) this.baseY = nose.y; // Calibration on first frame
-
-        // Reset calibration if user moves too much
+        if (!this.baseY) this.baseY = nose.y;
         if (nose.score < 0.5) return;
 
-        // Threshold: 30 pixels up (Y decreases)
         if (nose.y > this.baseY - 10) {
             this.status = "down";
-            this.baseY = (this.baseY * 0.9) + (nose.y * 0.1); // Slow adapt
-        } else if (nose.y < this.baseY - 40) { // Went up
-            if (this.status === "down") {
-                this.count++;
-                this.feedback = "High heels!";
-            }
+            this.baseY = (this.baseY * 0.9) + (nose.y * 0.1);
+        } else if (nose.y < this.baseY - 40) {
+            if (this.status === "down") { this.count++; this.feedback = "High heels!"; }
             this.status = "up";
         }
     }
 }
 
-/* ======================================================================
-   CATEGORY B: VERTICAL / CARDIO (Height & Separation Tracking)
-   ====================================================================== */
+// --- CATEGORY B: VERTICAL / CARDIO ---
 
 // 9. JUMPING JACKS
 class JumpingJack extends Exercise {
     update(pose) {
-        const l_w = pose.keypoints[9]; // Left Wrist
-        const r_w = pose.keypoints[10]; // Right Wrist
+        const l_w = pose.keypoints[9], r_w = pose.keypoints[10];
         const nose = pose.keypoints[0];
-        const l_a = pose.keypoints[15];
-        const r_a = pose.keypoints[16];
+        const l_a = pose.keypoints[15], r_a = pose.keypoints[16];
 
         if(!this.isValid([l_w, r_w, l_a, r_a])) return;
 
-        // Star Phase: Wrists above nose AND legs wide
         const handsUp = (l_w.y < nose.y) && (r_w.y < nose.y);
-        const legsWide = Math.abs(l_a.x - r_a.x) > 150; // Threshold pixels
+        const legsWide = Math.abs(l_a.x - r_a.x) > 150;
 
         if (handsUp && legsWide) {
-            this.status = "star";
-            this.feedback = "Together!";
+            this.status = "star"; this.feedback = "Together!";
         } else if (!handsUp && !legsWide) {
-            if (this.status === "star") {
-                this.count++;
-                this.feedback = "Go!";
-            }
+            if (this.status === "star") { this.count++; this.feedback = "Go!"; }
             this.status = "pencil";
         }
     }
@@ -286,20 +248,13 @@ class JumpingJack extends Exercise {
 // 10. HIGH KNEES
 class HighKnees extends Exercise {
     update(pose) {
-        const l_k = pose.keypoints[13];
-        const r_k = pose.keypoints[14];
-        const l_h = pose.keypoints[11];
-        const r_h = pose.keypoints[12];
-
-        // Check if ANY knee is above corresponding hip
+        const l_k = pose.keypoints[13], r_k = pose.keypoints[14];
+        const l_h = pose.keypoints[11], r_h = pose.keypoints[12];
         const leftUp = l_k.y < l_h.y;
         const rightUp = r_k.y < r_h.y;
 
         if (leftUp || rightUp) {
-            if (this.status === "down") {
-                this.count++;
-                this.feedback = "Higher!";
-            }
+            if (this.status === "down") { this.count++; this.feedback = "Higher!"; }
             this.status = "up";
         } else {
             this.status = "down";
@@ -312,15 +267,10 @@ class ButtKicks extends Exercise {
     update(pose) {
         const side = Utils.getDominantSide(pose);
         const p = Utils.getSidePoints(pose, side);
-        
-        // Heel (Ankle) comes close to Hip in Y axis, or Knee bends completely
         const angle = Utils.getAngle(p.h, p.k, p.a);
 
-        if (angle < 45) { // Maximum knee flexion
-            if (this.status === "down") {
-                this.count++;
-                this.feedback = "Kick!";
-            }
+        if (angle < 45) {
+            if (this.status === "down") { this.count++; this.feedback = "Kick!"; }
             this.status = "up";
         } else if (angle > 120) {
             this.status = "down";
@@ -331,178 +281,124 @@ class ButtKicks extends Exercise {
 // 12. SQUAT JUMPS
 class SquatJump extends Exercise {
     update(pose) {
-        // Use Squat Logic + Height check
         const side = Utils.getDominantSide(pose);
         const p = Utils.getSidePoints(pose, side);
-        
         const angle = Utils.getAngle(p.h, p.k, p.a);
         
-        // Detect Deep Squat
         if (angle < 100) {
-            this.status = "squat";
-            this.feedback = "EXPLODE UP!";
-        } 
-        // Detect Extension (Jump)
-        else if (angle > 170 && this.status === "squat") {
-             this.count++;
-             this.status = "jump";
-             this.feedback = "Land Softly";
+            this.status = "squat"; this.feedback = "EXPLODE UP!";
+        } else if (angle > 170 && this.status === "squat") {
+             this.count++; this.status = "jump"; this.feedback = "Land Softly";
         }
     }
 }
 
-// 13. BOX JUMPS (Simulated - detecting hip elevation)
+// 13. BOX JUMPS
 class BoxJump extends Exercise {
     update(pose) {
         const side = Utils.getDominantSide(pose);
         const hip = Utils.getSidePoints(pose, side).h;
         
         if (!this.floorY) this.floorY = hip.y;
-
-        // Reset floor occasionally
         if (hip.y > this.floorY) this.floorY = hip.y;
 
-        // Jump Detection: Hip rises significantly (150px) quickly
         if (this.floorY - hip.y > 150) {
-            if (this.status === "ground") {
-                this.count++;
-                this.feedback = "On Box!";
-            }
+            if (this.status === "ground") { this.count++; this.feedback = "On Box!"; }
             this.status = "air";
         } else if (this.floorY - hip.y < 50) {
-            this.status = "ground";
-            this.feedback = "Jump!";
+            this.status = "ground"; this.feedback = "Jump!";
         }
     }
 }
 
-/* ======================================================================
-   CATEGORY C: STATIC HOLDS (Time-based, Alignment)
-   ====================================================================== */
+// --- CATEGORY C: STATIC HOLDS ---
 
 // 14. PLANK
 class Plank extends Exercise {
-    constructor() {
-        super();
-        this.type = "time";
-    }
+    constructor() { super(); this.type = "time"; }
     update(pose) {
         const side = Utils.getDominantSide(pose);
         const p = Utils.getSidePoints(pose, side);
         if(!this.isValid([p.s, p.h, p.a])) return;
 
         const angle = Utils.getAngle(p.s, p.h, p.a);
-
-        // Valid Plank: Body is straight (165-195 degrees)
         if (angle > 165 && angle < 195) {
             if (!this.startTime) this.startTime = Date.now();
             this.count = ((Date.now() - this.startTime) / 1000).toFixed(1);
             this.feedback = "Hold...";
         } else {
             this.startTime = null;
-            if (angle <= 165) this.feedback = "Lower Hips";
-            else this.feedback = "Lift Hips";
+            this.feedback = angle <= 165 ? "Lower Hips" : "Lift Hips";
         }
     }
 }
 
 // 15. SIDE PLANK
 class SidePlank extends Exercise {
-    constructor() {
-        super();
-        this.type = "time";
-    }
+    constructor() { super(); this.type = "time"; }
     update(pose) {
-        // Logic is identical to Plank, but user is facing camera differently. 
-        // MoveNet usually handles 2D projection well enough.
         const side = Utils.getDominantSide(pose);
         const p = Utils.getSidePoints(pose, side);
         if(!this.isValid([p.s, p.h, p.a])) return;
 
         const angle = Utils.getAngle(p.s, p.h, p.a);
-        
         if (angle > 160 && angle < 200) {
              if (!this.startTime) this.startTime = Date.now();
             this.count = ((Date.now() - this.startTime) / 1000).toFixed(1);
             this.feedback = "Stay strong";
         } else {
-            this.startTime = null;
-            this.feedback = "Align body";
+            this.startTime = null; this.feedback = "Align body";
         }
     }
 }
 
 // 16. WALL SIT
 class WallSit extends Exercise {
-    constructor() {
-        super();
-        this.type = "time";
-    }
+    constructor() { super(); this.type = "time"; }
     update(pose) {
         const side = Utils.getDominantSide(pose);
         const p = Utils.getSidePoints(pose, side);
         if(!this.isValid([p.h, p.k, p.a])) return;
 
         const angle = Utils.getAngle(p.h, p.k, p.a);
-
-        // Knee should be ~90 degrees
         if (angle > 80 && angle < 110) {
              if (!this.startTime) this.startTime = Date.now();
             this.count = ((Date.now() - this.startTime) / 1000).toFixed(1);
             this.feedback = "Burn!";
         } else {
-            this.startTime = null;
-            this.feedback = "Knees at 90°";
+            this.startTime = null; this.feedback = "Knees at 90°";
         }
     }
 }
 
 // 17. GLUTE BRIDGE HOLD
 class GluteBridge extends Exercise {
-    constructor() {
-        super();
-        this.type = "time";
-    }
+    constructor() { super(); this.type = "time"; }
     update(pose) {
         const side = Utils.getDominantSide(pose);
         const p = Utils.getSidePoints(pose, side);
-        
-        // Line from Shoulder to Knee should be straight at top
         const angle = Utils.getAngle(p.s, p.h, p.k);
-
         if (angle > 160) {
             if (!this.startTime) this.startTime = Date.now();
             this.count = ((Date.now() - this.startTime) / 1000).toFixed(1);
             this.feedback = "Squeeze!";
         } else {
-            this.startTime = null;
-            this.feedback = "Hips higher";
+            this.startTime = null; this.feedback = "Hips higher";
         }
     }
 }
 
-/* ======================================================================
-   CATEGORY D: COMPLEX / CROSS-BODY
-   ====================================================================== */
+// --- CATEGORY D: COMPLEX / CROSS-BODY ---
 
 // 18. BICYCLE CRUNCHES
 class BicycleCrunch extends Exercise {
     update(pose) {
-        const l_elbow = pose.keypoints[7];
-        const r_knee = pose.keypoints[14];
-        const r_elbow = pose.keypoints[8];
-        const l_knee = pose.keypoints[13];
+        const le = pose.keypoints[7], rk = pose.keypoints[14];
+        const re = pose.keypoints[8], lk = pose.keypoints[13];
+        const d1 = Utils.getDistance(le, rk), d2 = Utils.getDistance(re, lk);
 
-        // Distance Check: Left Elbow meets Right Knee
-        const dist1 = Utils.getDistance(l_elbow, r_knee);
-        const dist2 = Utils.getDistance(r_elbow, l_knee);
-
-        // Threshold 80 pixels (adjust based on resolution)
-        if (dist1 < 100 || dist2 < 100) {
-            if (this.status === "open") {
-                this.count++;
-                this.feedback = "Twist!";
-            }
+        if (d1 < 100 || d2 < 100) {
+            if (this.status === "open") { this.count++; this.feedback = "Twist!"; }
             this.status = "close";
         } else {
             this.status = "open";
@@ -513,20 +409,12 @@ class BicycleCrunch extends Exercise {
 // 19. MOUNTAIN CLIMBERS
 class MountainClimber extends Exercise {
     update(pose) {
-        // Similar to high knees but in plank position (Horizontal)
-        // Check Knee X position relative to Hip X position
         const side = Utils.getDominantSide(pose);
         const p = Utils.getSidePoints(pose, side);
-        
-        // In plank, head is far from feet. 
-        // Rep counts when Knee gets close to Elbow
         const dist = Utils.getDistance(p.k, p.e);
 
         if (dist < 150) {
-             if (this.status === "back") {
-                this.count++;
-                this.feedback = "Fast!";
-            }
+             if (this.status === "back") { this.count++; this.feedback = "Fast!"; }
             this.status = "front";
         } else {
             this.status = "back";
@@ -536,42 +424,58 @@ class MountainClimber extends Exercise {
 
 // 20. BURPEES
 class Burpee extends Exercise {
-    // 3 States: Stand -> Plank -> Stand
-    constructor() {
-        super();
-        this.burpeeState = 0; // 0: Stand, 1: Plank, 2: Jumping up
-    }
-    
+    constructor() { super(); this.burpeeState = 0; }
     update(pose) {
         const side = Utils.getDominantSide(pose);
         const p = Utils.getSidePoints(pose, side);
-        const bodyAngle = Utils.getAngle(p.s, p.h, p.a); // Straight body?
+        const bodyAngle = Utils.getAngle(p.s, p.h, p.a);
 
-        // 1. Standing Phase
         if (this.burpeeState === 0 && bodyAngle > 165 && p.h.y < 300) {
             this.feedback = "Drop down!";
         }
-        
-        // 2. Plank Phase (Hips low, body straight-ish)
-        // Detect if hips dropped significantly
         if (this.burpeeState === 0 && p.h.y > 350) {
-            this.burpeeState = 1;
-            this.feedback = "Kick feet back!";
+            this.burpeeState = 1; this.feedback = "Kick feet back!";
         }
-        
-        // 3. Return to Stand
         if (this.burpeeState === 1 && p.h.y < 300 && bodyAngle > 160) {
-            this.count++;
-            this.burpeeState = 0;
-            this.feedback = "Jump!";
+            this.count++; this.burpeeState = 0; this.feedback = "Jump!";
         }
     }
 }
 
-/**
- * EXERCISE MANAGER
- * Handles switching between exercises
- */
+// --- ADDITIONAL EXERCISES FOR ROUTINES (Needed for Warmup/Stretch) ---
+// These are added to ensure the RoutineSystem logic below works correctly.
+
+class SideStretch extends Exercise {
+    constructor() { super(); this.type = "time"; }
+    update(pose) {
+        const side = Utils.getDominantSide(pose);
+        const p = Utils.getSidePoints(pose, side);
+        const bodyAngle = Utils.getAngle(p.s, p.h, p.a);
+        if (p.w.y < p.s.y && (bodyAngle < 160 || bodyAngle > 200)) {
+            if (!this.startTime) this.startTime = Date.now();
+            this.count = ((Date.now() - this.startTime) / 1000).toFixed(1);
+            this.feedback = "Feel the stretch";
+        } else { this.startTime = null; this.feedback = "Lean & Reach"; }
+    }
+}
+
+class ForwardFold extends Exercise {
+    constructor() { super(); this.type = "time"; }
+    update(pose) {
+        const side = Utils.getDominantSide(pose);
+        const p = Utils.getSidePoints(pose, side);
+        if (p.s.y > p.h.y + 30) { 
+            if (!this.startTime) this.startTime = Date.now();
+            this.count = ((Date.now() - this.startTime) / 1000).toFixed(1);
+            this.feedback = "Breathe...";
+        } else { this.startTime = null; this.feedback = "Touch Toes"; }
+    }
+}
+
+/* ======================================================================
+   SECTION 3: MANAGERS
+   ====================================================================== */
+
 const ExerciseManager = {
     exercises: {
         "squat": new Squat(),
@@ -593,7 +497,10 @@ const ExerciseManager = {
         "glutebridge": new GluteBridge(),
         "bicycle": new BicycleCrunch(),
         "climbers": new MountainClimber(),
-        "burpee": new Burpee()
+        "burpee": new Burpee(),
+        // Added for Routines
+        "sidestretch": new SideStretch(),
+        "forwardfold": new ForwardFold()
     },
     
     currentExerciseName: "squat",
@@ -616,3 +523,264 @@ const ExerciseManager = {
         return Object.keys(this.exercises);
     }
 };
+
+const RoutineSystem = {
+    active: false,
+    queue: [],
+    index: 0,
+    timer: 0,
+    lastTick: 0,
+    
+    routines: {
+        warmup: [
+            { name: 'jumpingjack', time: 30, label: "Warm Up: Jacks" },
+            { name: 'highknees', time: 30, label: "Warm Up: Knees" },
+            { name: 'squat', time: 30, label: "Leg Activation" }
+        ],
+        stretch: [
+            { name: 'forwardfold', time: 20, label: "Hamstrings" },
+            { name: 'sidestretch', time: 20, label: "Side Body" },
+            { name: 'wallsit', time: 20, label: "Final Hold" }
+        ]
+    },
+
+    start: function(type) {
+        if (!this.routines[type]) return;
+        this.active = true;
+        this.queue = this.routines[type];
+        this.index = 0;
+        document.getElementById('exercise-controls').style.display = 'none';
+        this.loadStep();
+    },
+
+    stop: function() {
+        this.active = false;
+        this.queue = [];
+        document.getElementById('exercise-controls').style.display = 'block';
+        ExerciseManager.switch('squat');
+    },
+
+    loadStep: function() {
+        if (this.index >= this.queue.length) {
+            this.stop();
+            alert("Routine Complete!");
+            return;
+        }
+        const step = this.queue[this.index];
+        this.timer = step.time;
+        this.lastTick = Date.now();
+        ExerciseManager.switch(step.name);
+    },
+
+    update: function() {
+        if (!this.active) return;
+        const now = Date.now();
+        if (now - this.lastTick > 1000) {
+            this.timer--;
+            this.lastTick = now;
+            if (this.timer <= 0) {
+                this.index++;
+                this.loadStep();
+            }
+        }
+    }
+};
+
+/* ======================================================================
+   SECTION 4: INITIALIZATION & APP LOOP
+   ====================================================================== */
+
+async function init() {
+    // 1. Setup Camera
+    video = document.getElementById('video');
+    video.width = CONFIG.videoWidth;
+    video.height = CONFIG.videoHeight;
+    
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            'audio': false,
+            'video': { width: CONFIG.videoWidth, height: CONFIG.videoHeight }
+        });
+        video.srcObject = stream;
+        
+        await new Promise((resolve) => {
+            video.onloadedmetadata = () => {
+                video.play();
+                resolve();
+            };
+        });
+    }
+
+    // 2. Setup Canvas
+    canvas = document.getElementById('output');
+    canvas.width = CONFIG.videoWidth;
+    canvas.height = CONFIG.videoHeight;
+    ctx = canvas.getContext('2d');
+
+    // 3. Load MoveNet Model
+    console.log("Loading MoveNet...");
+    const detectorConfig = {
+        modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
+    };
+    detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, detectorConfig);
+    console.log("MoveNet Loaded.");
+
+    // 4. Setup Controls
+    setupControls();
+
+    // 5. Start Loop
+    renderLoop();
+}
+
+function setupControls() {
+    const select = document.getElementById('exercise-select');
+    if (select) {
+        const options = ExerciseManager.getOptions();
+        options.forEach(opt => {
+            const el = document.createElement("option");
+            el.value = opt;
+            el.text = opt.charAt(0).toUpperCase() + opt.slice(1);
+            select.appendChild(el);
+        });
+        select.addEventListener('change', (e) => {
+            ExerciseManager.switch(e.target.value);
+        });
+    }
+}
+
+async function renderLoop(timestamp) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 1. Draw Video
+    ctx.save();
+    ctx.scale(-1, 1);
+    ctx.translate(-canvas.width, 0);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.restore();
+
+    // 2. Run AI Detection (Throttled)
+    if (timestamp - lastAiTime > (1000 / CONFIG.aiFps)) {
+        if (detector && video.readyState === 4) {
+            try {
+                const poses = await detector.estimatePoses(video);
+                if (poses && poses.length > 0) {
+                    lastPose = poses[0];
+                    
+                    // Update Routine System
+                    if (typeof RoutineSystem !== 'undefined') {
+                        RoutineSystem.update();
+                    }
+                    
+                    // Update Exercise Logic
+                    const activeExercise = ExerciseManager.getCurrent();
+                    activeExercise.update(lastPose);
+                }
+            } catch (error) {
+                console.error("AI Error:", error);
+            }
+        }
+        lastAiTime = timestamp;
+    }
+
+    // 3. Draw UI & Skeleton
+    if (lastPose) {
+        drawSkeleton(lastPose);
+        drawUI();
+    }
+
+    requestAnimationFrame(renderLoop);
+}
+
+// =======================
+// DRAWING HELPERS
+// =======================
+
+function drawSkeleton(pose) {
+    const exercise = ExerciseManager.getCurrent();
+    
+    let color = '#00FF00'; // Green
+    if (exercise.status === 'down' || exercise.status === 'star' || exercise.status === 'in') {
+        color = '#FFFF00'; // Yellow
+    }
+
+    const connections = [
+        [5, 7], [7, 9],       // Left Arm
+        [6, 8], [8, 10],      // Right Arm
+        [5, 6],               // Shoulders
+        [5, 11], [6, 12],     // Torso
+        [11, 12],             // Hips
+        [11, 13], [13, 15],   // Left Leg
+        [12, 14], [14, 16]    // Right Leg
+    ];
+
+    connections.forEach(([i, j]) => {
+        const kp1 = pose.keypoints[i];
+        const kp2 = pose.keypoints[j];
+        if (kp1.score > 0.3 && kp2.score > 0.3) {
+            ctx.beginPath();
+            ctx.moveTo(kp1.x, kp1.y);
+            ctx.lineTo(kp2.x, kp2.y);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 4;
+            ctx.stroke();
+        }
+    });
+
+    pose.keypoints.forEach(kp => {
+        if (kp.score > 0.3) {
+            ctx.beginPath();
+            ctx.arc(kp.x, kp.y, 6, 0, 2 * Math.PI);
+            ctx.fillStyle = 'red';
+            ctx.fill();
+        }
+    });
+}
+
+function drawUI() {
+    const exercise = ExerciseManager.getCurrent();
+
+    // Box background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(0, 0, 300, 150);
+
+    // Text Settings
+    ctx.font = "bold 30px Arial";
+    ctx.fillStyle = "white";
+    
+    // 1. Title (Handle Routines)
+    let title = ExerciseManager.currentExerciseName.toUpperCase();
+    if (typeof RoutineSystem !== 'undefined' && RoutineSystem.active && RoutineSystem.queue[RoutineSystem.index]) {
+        title = RoutineSystem.queue[RoutineSystem.index].label.toUpperCase();
+    }
+    ctx.font = "20px Arial";
+    ctx.fillStyle = "#AAAAAA";
+    ctx.fillText(title, 20, 30);
+
+    // 2. Count / Timer
+    ctx.font = "bold 40px Arial";
+    ctx.fillStyle = "#FFFFFF";
+    
+    let displayValue;
+    if (typeof RoutineSystem !== 'undefined' && RoutineSystem.active) {
+        displayValue = RoutineSystem.timer + " s";
+        ctx.fillStyle = "#00FFFF";
+    } else {
+        displayValue = exercise.count;
+        if (exercise.type === 'time') {
+            displayValue += " s";
+        }
+    }
+    ctx.fillText(displayValue, 20, 80);
+
+    // 3. Feedback
+    ctx.font = "24px Arial";
+    if (exercise.feedback.includes("Good") || exercise.feedback.includes("Hold") || exercise.feedback.includes("Burn")) {
+        ctx.fillStyle = "#00FF00";
+    } else {
+        ctx.fillStyle = "#FFCC00";
+    }
+    ctx.fillText(exercise.feedback, 20, 120);
+}
+
+// Start Application
+init();
