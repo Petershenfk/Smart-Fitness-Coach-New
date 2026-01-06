@@ -69,13 +69,13 @@
         .main-container {
             display: flex;
             flex: 1;
-            height: calc(100vh - 60px); /* Fill remaining height */
+            height: calc(100vh - 60px);
             overflow: hidden;
         }
 
-        /* SIDEBAR (Exercise List) */
+        /* SIDEBAR */
         .sidebar {
-            width: 300px; /* Wider to fit names */
+            width: 300px;
             min-width: 250px;
             background: var(--surface);
             overflow-y: auto;
@@ -101,7 +101,7 @@
             font-size: 0.95rem;
             display: flex;
             align-items: center;
-            white-space: nowrap; /* Prevent wrapping */
+            white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
@@ -114,7 +114,7 @@
         }
         .exercise-item .status-icon { margin-right: 10px; min-width: 25px; }
 
-        /* VIDEO AREA - FIT SCREEN FIX */
+        /* VIDEO AREA */
         .workspace {
             flex: 1;
             position: relative;
@@ -129,23 +129,20 @@
             position: relative;
             width: 100%;
             height: 100%;
-            max-width: 100%;
-            max-height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
         }
 
-        /* Video and Canvas stack on top of each other */
         video, canvas {
             position: absolute;
             width: 100%;
             height: 100%;
-            object-fit: contain; /* Ensures whole video is visible without stretching */
-            transform: scaleX(-1); /* Mirror Effect */
+            object-fit: contain;
+            transform: scaleX(-1);
         }
 
-        /* HUD OVERLAY (HTML based, so it won't mirror) */
+        /* HUD OVERLAY */
         #hud-overlay {
             position: absolute;
             top: 20px;
@@ -155,9 +152,11 @@
             padding: 20px;
             border-radius: 12px;
             border-left: 5px solid var(--primary);
-            pointer-events: none; /* Let clicks pass through */
+            pointer-events: none;
             z-index: 20;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: opacity 0.3s;
+            opacity: 0; /* Hidden until loaded */
         }
 
         #hud-title {
@@ -182,18 +181,32 @@
             color: var(--active);
         }
 
-        /* LOADING SPINNER */
-        #loading {
+        /* LOADING & ERROR */
+        #status-screen {
             position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            color: var(--primary);
-            font-size: 1.5rem;
-            text-align: center;
-            z-index: 50;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
         }
+        .spinner {
+            width: 50px; height: 50px;
+            border: 5px solid #333;
+            border-top: 5px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        #status-text { font-size: 1.2rem; color: white; margin-bottom: 10px; }
+        #status-subtext { font-size: 0.9rem; color: #888; }
+        #error-msg { color: #ff5252; text-align: center; max-width: 400px; display: none; }
 
-        /* RESPONSIVE */
         @media (max-width: 900px) {
             .main-container { flex-direction: column-reverse; }
             .sidebar { width: 100%; height: 30%; border-right: none; border-top: 1px solid #333; }
@@ -201,13 +214,12 @@
             #hud-overlay { top: 10px; left: 10px; width: auto; right: 10px; padding: 10px; display: flex; justify-content: space-between; align-items: center;}
             #hud-value { font-size: 32px; margin: 0; margin-right: 15px;}
             #hud-feedback { font-size: 16px; }
-            #hud-title { display: none; } /* Hide title on mobile to save space */
+            #hud-title { display: none; }
         }
     </style>
 </head>
 <body>
 
-    <!-- HEADER -->
     <header>
         <h1>AI Fitness Coach</h1>
         <div class="mode-controls">
@@ -217,29 +229,24 @@
         </div>
     </header>
 
-    <!-- MAIN CONTENT -->
     <div class="main-container">
-        
-        <!-- SIDEBAR LIST -->
         <div class="sidebar">
             <h3>Available Exercises</h3>
-            <div id="exercise-list-container">
-                <!-- Javascript will populate this -->
-            </div>
+            <div id="exercise-list-container"></div>
         </div>
 
-        <!-- VIDEO AREA -->
         <div class="workspace">
-            <div id="loading">
-                <div>Loading AI Model...</div>
-                <div style="font-size: 0.8em; color: #888;">Please allow camera access</div>
+            <!-- STATUS SCREEN -->
+            <div id="status-screen">
+                <div class="spinner" id="spinner"></div>
+                <div id="status-text">Initializing System...</div>
+                <div id="status-subtext">Please allow camera access when prompted</div>
+                <div id="error-msg"></div>
             </div>
             
             <div id="video-container">
                 <video id="video" playsinline></video>
                 <canvas id="output"></canvas>
-                
-                <!-- NEW HTML HUD (Solves Mirroring Issue) -->
                 <div id="hud-overlay">
                     <div id="hud-title">Ready</div>
                     <div id="hud-value">0</div>
@@ -249,14 +256,9 @@
         </div>
     </div>
 
-    <!-- MAIN LOGIC SCRIPT -->
     <script>
-        /* ======================================================================
-           1. CONFIGURATION & STATE
-           ====================================================================== */
+        // === CONFIGURATION ===
         const CONFIG = {
-            // Internal resolution for AI (Lower = Faster). 
-            // We scale visually with CSS, so this can remain low for performance.
             videoWidth: 640,
             videoHeight: 480,
             aiFps: 10, 
@@ -272,20 +274,26 @@
             isLoading: true
         };
 
-        /* ======================================================================
-           2. MATH UTILITIES
-           ====================================================================== */
+        const STATUS = {
+            text: document.getElementById('status-text'),
+            sub: document.getElementById('status-subtext'),
+            screen: document.getElementById('status-screen'),
+            spinner: document.getElementById('spinner'),
+            error: document.getElementById('error-msg')
+        };
+
+        // === UTILS ===
         const Utils = {
             getAngle: (a, b, c) => {
-                let radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
-                let angle = Math.abs(radians * 180.0 / Math.PI);
-                return angle > 180.0 ? 360 - angle : angle;
+                let r = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
+                let ang = Math.abs(r * 180.0 / Math.PI);
+                return ang > 180.0 ? 360 - ang : ang;
             },
             getDistance: (a, b) => Math.hypot(a.x - b.x, a.y - b.y),
             getDominantSide: (pose) => {
-                const leftScore = (pose.keypoints[5].score + pose.keypoints[11].score + pose.keypoints[13].score);
-                const rightScore = (pose.keypoints[6].score + pose.keypoints[12].score + pose.keypoints[14].score);
-                return leftScore > rightScore ? "left" : "right";
+                const l = (pose.keypoints[5].score + pose.keypoints[11].score + pose.keypoints[13].score);
+                const r = (pose.keypoints[6].score + pose.keypoints[12].score + pose.keypoints[14].score);
+                return l > r ? "left" : "right";
             },
             getSidePoints: (pose, side) => {
                 return side === "left" ? 
@@ -295,247 +303,96 @@
             isValid: (points) => points.every(p => p.score > 0.3)
         };
 
-        /* ======================================================================
-           3. EXERCISE CLASSES
-           ====================================================================== */
+        // === EXERCISE CLASSES ===
         class Exercise {
-            constructor(name) {
-                this.name = name;
-                this.count = 0;
-                this.status = "start";
-                this.feedback = "Get ready";
-                this.type = "reps"; // 'reps' or 'time'
-            }
+            constructor(name) { this.name = name; this.count = 0; this.status = "start"; this.feedback = "Get ready"; this.type = "reps"; }
             reset() { this.count = 0; this.status = "start"; this.feedback = "Get ready"; this.startTime = null; }
         }
 
-        // --- HINGE ---
         class Squat extends Exercise {
             update(pose) {
-                const side = Utils.getDominantSide(pose);
-                const p = Utils.getSidePoints(pose, side);
+                const s = Utils.getDominantSide(pose);
+                const p = Utils.getSidePoints(pose, s);
                 if (!Utils.isValid([p.h, p.k, p.a])) return;
-                const angle = Utils.getAngle(p.h, p.k, p.a);
-                if (angle > 165) {
-                    if (this.status === "down") { this.count++; this.feedback = "Good Rep!"; }
-                    this.status = "up";
-                } else if (angle < 100) { this.status = "down"; this.feedback = "Deep enough!"; }
-                else if (angle < 140 && this.status === "up") this.feedback = "Lower...";
+                const ang = Utils.getAngle(p.h, p.k, p.a);
+                if (ang > 165) { if (this.status === "down") { this.count++; this.feedback = "Good Rep!"; } this.status = "up"; }
+                else if (ang < 100) { this.status = "down"; this.feedback = "Deep enough!"; }
+                else if (ang < 140 && this.status === "up") this.feedback = "Lower...";
             }
         }
         class PushUp extends Exercise {
             update(pose) {
-                const side = Utils.getDominantSide(pose);
-                const p = Utils.getSidePoints(pose, side);
+                const s = Utils.getDominantSide(pose);
+                const p = Utils.getSidePoints(pose, s);
                 if (!Utils.isValid([p.s, p.e, p.w])) return;
-                const angle = Utils.getAngle(p.s, p.e, p.w);
-                if (angle > 160) {
-                    if (this.status === "down") { this.count++; this.feedback = "Up!"; }
-                    this.status = "up";
-                } else if (angle < 90) { this.status = "down"; this.feedback = "Good depth!"; }
+                const ang = Utils.getAngle(p.s, p.e, p.w);
+                if (ang > 160) { if (this.status === "down") { this.count++; this.feedback = "Up!"; } this.status = "up"; }
+                else if (ang < 90) { this.status = "down"; this.feedback = "Good depth!"; }
             }
         }
         class Lunge extends Exercise {
             update(pose) {
                 const l = Utils.getSidePoints(pose, "left"), r = Utils.getSidePoints(pose, "right");
-                const activeAngle = Math.min(Utils.getAngle(l.h, l.k, l.a), Utils.getAngle(r.h, r.k, r.a));
-                if (activeAngle > 160) {
-                    if (this.status === "down") { this.count++; this.feedback = "Nice!"; }
-                    this.status = "up";
-                } else if (activeAngle < 100) { this.status = "down"; this.feedback = "Hold..."; }
+                const ang = Math.min(Utils.getAngle(l.h, l.k, l.a), Utils.getAngle(r.h, r.k, r.a));
+                if (ang > 160) { if (this.status === "down") { this.count++; this.feedback = "Nice!"; } this.status = "up"; }
+                else if (ang < 100) { this.status = "down"; this.feedback = "Hold..."; }
             }
         }
-        class Dip extends Exercise {
-            update(pose) {
-                const side = Utils.getDominantSide(pose);
-                const p = Utils.getSidePoints(pose, side);
-                if (!Utils.isValid([p.s, p.e, p.w])) return;
-                const angle = Utils.getAngle(p.s, p.e, p.w);
-                if (angle > 160) {
-                    if (this.status === "down") { this.count++; this.feedback = "Push!"; }
-                    this.status = "up";
-                } else if (angle < 100) { this.status = "down"; this.feedback = "Deep..."; }
-            }
-        }
-        class SitUp extends Exercise {
-            update(pose) {
-                const side = Utils.getDominantSide(pose);
-                const p = Utils.getSidePoints(pose, side);
-                if (!Utils.isValid([p.s, p.h, p.k])) return;
-                const angle = Utils.getAngle(p.s, p.h, p.k);
-                if (angle > 120) { this.status = "down"; this.feedback = "Crunch!"; }
-                else if (angle < 60) {
-                    if (this.status === "down") { this.count++; this.feedback = "Good!"; }
-                    this.status = "up";
-                }
-            }
-        }
-        class LegRaise extends Exercise {
-            update(pose) {
-                const side = Utils.getDominantSide(pose);
-                const p = Utils.getSidePoints(pose, side);
-                if (!Utils.isValid([p.s, p.h, p.k])) return;
-                const angle = Utils.getAngle(p.s, p.h, p.k);
-                if (angle > 170) { this.status = "down"; this.feedback = "Lift!"; }
-                else if (angle < 100) {
-                    if (this.status === "down") { this.count++; this.feedback = "Control..."; }
-                    this.status = "up";
-                }
-            }
-        }
-        class DonkeyKick extends Exercise {
-            update(pose) {
-                const side = Utils.getDominantSide(pose);
-                const p = Utils.getSidePoints(pose, side);
-                const angle = Utils.getAngle(p.s, p.h, p.k);
-                if (angle < 100) { this.status = "in"; this.feedback = "Kick back!"; }
-                else if (angle > 160) {
-                    if (this.status === "in") { this.count++; this.feedback = "Squeeze!"; }
-                    this.status = "out";
-                }
-            }
-        }
-        class CalfRaise extends Exercise {
-            update(pose) {
-                const nose = pose.keypoints[0];
-                if (!this.baseY) this.baseY = nose.y;
-                if (nose.score < 0.5) return;
-                if (nose.y > this.baseY - 10) { this.status = "down"; this.baseY = (this.baseY*0.9)+(nose.y*0.1); }
-                else if (nose.y < this.baseY - 40) {
-                    if (this.status === "down") { this.count++; this.feedback = "Up high!"; }
-                    this.status = "up";
-                }
-            }
-        }
-
-        // --- CARDIO ---
         class JumpingJack extends Exercise {
             update(pose) {
-                const nose = pose.keypoints[0];
-                const l_w = pose.keypoints[9], r_w = pose.keypoints[10];
-                const l_a = pose.keypoints[15], r_a = pose.keypoints[16];
-                if (!Utils.isValid([l_w, r_w, l_a, r_a])) return;
-                const handsUp = (l_w.y < nose.y) && (r_w.y < nose.y);
-                const legsWide = Math.abs(l_a.x - r_a.x) > 150;
-                if (handsUp && legsWide) { this.status = "star"; this.feedback = "Together!"; }
-                else if (!handsUp && !legsWide) {
-                    if (this.status === "star") { this.count++; this.feedback = "Go!"; }
-                    this.status = "pencil";
-                }
+                const n = pose.keypoints[0];
+                const lw = pose.keypoints[9], rw = pose.keypoints[10];
+                const la = pose.keypoints[15], ra = pose.keypoints[16];
+                if (!Utils.isValid([lw, rw, la, ra])) return;
+                const up = (lw.y < n.y) && (rw.y < n.y);
+                const wide = Math.abs(la.x - ra.x) > 150;
+                if (up && wide) { this.status = "star"; this.feedback = "Together!"; }
+                else if (!up && !wide) { if (this.status === "star") { this.count++; this.feedback = "Go!"; } this.status = "pencil"; }
             }
         }
         class HighKnees extends Exercise {
             update(pose) {
                 const lk = pose.keypoints[13], rk = pose.keypoints[14];
                 const lh = pose.keypoints[11], rh = pose.keypoints[12];
-                if (lk.y < lh.y || rk.y < rh.y) {
-                    if (this.status === "down") { this.count++; this.feedback = "Faster!"; }
-                    this.status = "up";
-                } else { this.status = "down"; }
+                if (lk.y < lh.y || rk.y < rh.y) { if (this.status === "down") { this.count++; this.feedback = "Faster!"; } this.status = "up"; }
+                else { this.status = "down"; }
             }
         }
-        class ButtKicks extends Exercise {
-            update(pose) {
-                const side = Utils.getDominantSide(pose);
-                const p = Utils.getSidePoints(pose, side);
-                const angle = Utils.getAngle(p.h, p.k, p.a);
-                if (angle < 45) {
-                    if (this.status === "down") { this.count++; this.feedback = "Kick!"; }
-                    this.status = "up";
-                } else if (angle > 120) { this.status = "down"; }
-            }
-        }
-        class SquatJump extends Exercise {
-            update(pose) {
-                const side = Utils.getDominantSide(pose);
-                const p = Utils.getSidePoints(pose, side);
-                const angle = Utils.getAngle(p.h, p.k, p.a);
-                if (angle < 100) { this.status = "squat"; this.feedback = "EXPLODE!"; }
-                else if (angle > 170 && this.status === "squat") {
-                    this.count++; this.status = "jump"; this.feedback = "Land Softly";
-                }
-            }
-        }
-        class BoxJump extends Exercise {
-            update(pose) {
-                const side = Utils.getDominantSide(pose);
-                const h = Utils.getSidePoints(pose, side).h;
-                if (!this.floorY) this.floorY = h.y;
-                if (h.y > this.floorY) this.floorY = h.y; 
-                if (this.floorY - h.y > 150) {
-                    if (this.status === "ground") { this.count++; this.feedback = "On Box!"; }
-                    this.status = "air";
-                } else if (this.floorY - h.y < 50) {
-                    this.status = "ground"; this.feedback = "Jump!";
-                }
-            }
-        }
-
-        // --- STATIC / TIME ---
         class Plank extends Exercise {
             constructor() { super(); this.type = "time"; }
             update(pose) {
-                const side = Utils.getDominantSide(pose);
-                const p = Utils.getSidePoints(pose, side);
+                const s = Utils.getDominantSide(pose);
+                const p = Utils.getSidePoints(pose, s);
                 if (!Utils.isValid([p.s, p.h, p.a])) return;
-                const angle = Utils.getAngle(p.s, p.h, p.a);
-                if (angle > 165 && angle < 195) {
+                const ang = Utils.getAngle(p.s, p.h, p.a);
+                if (ang > 165 && ang < 195) {
                     if (!this.startTime) this.startTime = Date.now();
                     this.count = ((Date.now() - this.startTime) / 1000).toFixed(1);
                     this.feedback = "Hold...";
-                } else {
-                    this.startTime = null; this.feedback = angle <= 165 ? "Lower Hips" : "Lift Hips";
-                }
-            }
-        }
-        class SidePlank extends Exercise {
-            constructor() { super(); this.type = "time"; }
-            update(pose) {
-                const side = Utils.getDominantSide(pose);
-                const p = Utils.getSidePoints(pose, side);
-                if (!Utils.isValid([p.s, p.h, p.a])) return;
-                const angle = Utils.getAngle(p.s, p.h, p.a);
-                if (angle > 160 && angle < 200) {
-                    if (!this.startTime) this.startTime = Date.now();
-                    this.count = ((Date.now() - this.startTime) / 1000).toFixed(1);
-                    this.feedback = "Strong!";
-                } else { this.startTime = null; this.feedback = "Align body"; }
+                } else { this.startTime = null; this.feedback = ang <= 165 ? "Lower Hips" : "Lift Hips"; }
             }
         }
         class WallSit extends Exercise {
             constructor() { super(); this.type = "time"; }
             update(pose) {
-                const side = Utils.getDominantSide(pose);
-                const p = Utils.getSidePoints(pose, side);
+                const s = Utils.getDominantSide(pose);
+                const p = Utils.getSidePoints(pose, s);
                 if (!Utils.isValid([p.h, p.k, p.a])) return;
-                const angle = Utils.getAngle(p.h, p.k, p.a);
-                if (angle > 80 && angle < 110) {
+                const ang = Utils.getAngle(p.h, p.k, p.a);
+                if (ang > 80 && ang < 110) {
                     if (!this.startTime) this.startTime = Date.now();
                     this.count = ((Date.now() - this.startTime) / 1000).toFixed(1);
                     this.feedback = "Burn!";
                 } else { this.startTime = null; this.feedback = "Knees 90°"; }
             }
         }
-        class GluteBridge extends Exercise {
-            constructor() { super(); this.type = "time"; }
-            update(pose) {
-                const side = Utils.getDominantSide(pose);
-                const p = Utils.getSidePoints(pose, side);
-                const angle = Utils.getAngle(p.s, p.h, p.k);
-                if (angle > 160) {
-                    if (!this.startTime) this.startTime = Date.now();
-                    this.count = ((Date.now() - this.startTime) / 1000).toFixed(1);
-                    this.feedback = "Squeeze!";
-                } else { this.startTime = null; this.feedback = "Hips up"; }
-            }
-        }
         class SideStretch extends Exercise {
             constructor() { super(); this.type = "time"; }
             update(pose) {
-                const side = Utils.getDominantSide(pose);
-                const p = Utils.getSidePoints(pose, side);
-                const bodyAngle = Utils.getAngle(p.s, p.h, p.a);
-                if (p.w.y < p.s.y && (bodyAngle < 160 || bodyAngle > 200)) {
+                const s = Utils.getDominantSide(pose);
+                const p = Utils.getSidePoints(pose, s);
+                const ang = Utils.getAngle(p.s, p.h, p.a);
+                if (p.w.y < p.s.y && (ang < 160 || ang > 200)) {
                     if (!this.startTime) this.startTime = Date.now();
                     this.count = ((Date.now() - this.startTime) / 1000).toFixed(1);
                     this.feedback = "Stretching...";
@@ -545,8 +402,8 @@
         class ForwardFold extends Exercise {
             constructor() { super(); this.type = "time"; }
             update(pose) {
-                const side = Utils.getDominantSide(pose);
-                const p = Utils.getSidePoints(pose, side);
+                const s = Utils.getDominantSide(pose);
+                const p = Utils.getSidePoints(pose, s);
                 if (p.s.y > p.h.y + 30) { 
                     if (!this.startTime) this.startTime = Date.now();
                     this.count = ((Date.now() - this.startTime) / 1000).toFixed(1);
@@ -555,79 +412,25 @@
             }
         }
 
-        // --- COMPLEX ---
-        class BicycleCrunch extends Exercise {
-            update(pose) {
-                const le = pose.keypoints[7], rk = pose.keypoints[14];
-                const re = pose.keypoints[8], lk = pose.keypoints[13];
-                const d1 = Utils.getDistance(le, rk), d2 = Utils.getDistance(re, lk);
-                if (d1 < 100 || d2 < 100) {
-                    if (this.status === "open") { this.count++; this.feedback = "Twist!"; }
-                    this.status = "close";
-                } else { this.status = "open"; }
-            }
-        }
-        class MountainClimber extends Exercise {
-            update(pose) {
-                const side = Utils.getDominantSide(pose);
-                const p = Utils.getSidePoints(pose, side);
-                if (Utils.getDistance(p.k, p.e) < 150) {
-                    if (this.status === "back") { this.count++; this.feedback = "Fast!"; }
-                    this.status = "front";
-                } else { this.status = "back"; }
-            }
-        }
-        class Burpee extends Exercise {
-            constructor() { super(); this.burpeeState = 0; }
-            update(pose) {
-                const side = Utils.getDominantSide(pose);
-                const p = Utils.getSidePoints(pose, side);
-                const angle = Utils.getAngle(p.s, p.h, p.a);
-                if (this.burpeeState === 0 && angle > 165 && p.h.y < 300) this.feedback = "Drop!";
-                if (this.burpeeState === 0 && p.h.y > 350) { this.burpeeState = 1; this.feedback = "Kick back!"; }
-                if (this.burpeeState === 1 && p.h.y < 300 && angle > 160) {
-                    this.count++; this.burpeeState = 0; this.feedback = "Jump!";
-                }
-            }
-        }
-
-        /* ======================================================================
-           4. MANAGERS (Exercise & Routine) - FIXED NAMES
-           ====================================================================== */
+        // === MANAGERS ===
         const ExerciseManager = {
             exercises: {
                 "squat": new Squat("Squat"),
                 "pushup": new PushUp("Push Up"),
                 "lunge": new Lunge("Lunge"),
-                "dip": new Dip("Tricep Dip"),
-                "situp": new SitUp("Sit Up"),
-                "legraise": new LegRaise("Leg Raise"),
-                "donkeykick": new DonkeyKick("Donkey Kick"),
-                "calfraise": new CalfRaise("Calf Raise"),
                 "jumpingjack": new JumpingJack("Jumping Jack"),
-                "highknees": new High Knees("High Knees"),
-                "buttkicks": new ButtKicks("Butt Kicks"),
-                "squatjump": new SquatJump("Squat Jump"),
-                "boxjump": new BoxJump("Box Jump"),
+                "highknees": new HighKnees("High Knees"),
                 "plank": new Plank("Plank Hold"),
-                "sideplank": new SidePlank("Side Plank"),
                 "wallsit": new WallSit("Wall Sit"),
-                "glutebridge": new GluteBridge("Glute Bridge"),
-                "bicycle": new BicycleCrunch("Bicycle Crunch"),
-                "climbers": new MountainClimber("Mtn Climber"),
-                "burpee": new Burpee("Burpee"),
                 "sidestretch": new SideStretch("Side Stretch"),
                 "forwardfold": new ForwardFold("Forward Fold")
             },
             currentName: "squat",
-            
             getCurrent: function() { return this.exercises[this.currentName]; },
-            
             switch: function(name) {
                 if (this.exercises[name]) {
                     this.currentName = name;
                     this.exercises[name].reset();
-                    // Update UI Highlight
                     UI.highlightExercise(name);
                 }
             },
@@ -662,13 +465,12 @@
             stop: function() {
                 this.active = false;
                 this.queue = [];
-                // Return to default
                 ExerciseManager.switch('squat');
             },
             loadStep: function() {
                 if (this.index >= this.queue.length) {
                     this.stop();
-                    setMode('workout'); // UI Reset
+                    setMode('workout');
                     alert("Routine Complete!");
                     return;
                 }
@@ -683,17 +485,12 @@
                 if (now - this.lastTick > 1000) {
                     this.timer--;
                     this.lastTick = now;
-                    if (this.timer <= 0) {
-                        this.index++;
-                        this.loadStep();
-                    }
+                    if (this.timer <= 0) { this.index++; this.loadStep(); }
                 }
             }
         };
 
-        /* ======================================================================
-           5. UI INTERACTION
-           ====================================================================== */
+        // === UI & APP INIT ===
         const UI = {
             init: function() {
                 const listContainer = document.getElementById('exercise-list-container');
@@ -703,19 +500,13 @@
                     div.className = 'exercise-item';
                     div.id = `item-${key}`;
                     div.innerHTML = `<span class="status-icon">🏃</span> ${ex.name}`;
-                    div.onclick = () => {
-                        // Clicking manually implies "Free Workout" mode
-                        setMode('workout');
-                        ExerciseManager.switch(key);
-                    };
+                    div.onclick = () => { setMode('workout'); ExerciseManager.switch(key); };
                     listContainer.appendChild(div);
                 });
                 this.highlightExercise('squat');
             },
             highlightExercise: function(name) {
-                // Remove active class from all
                 document.querySelectorAll('.exercise-item').forEach(el => el.classList.remove('active'));
-                // Add to current
                 const el = document.getElementById(`item-${name}`);
                 if (el) {
                     el.classList.add('active');
@@ -731,91 +522,82 @@
             }
         };
 
-        // Global function for HTML buttons
         window.setMode = function(mode) {
-            // UI Button Logic
             document.querySelectorAll('.mode-controls button').forEach(b => b.classList.remove('active-mode'));
             document.getElementById(`btn-${mode}`).classList.add('active-mode');
-
-            // Logic Switch
-            if (mode === 'workout') {
-                RoutineSystem.stop();
-            } else if (mode === 'warmup') {
-                RoutineSystem.start('warmup');
-            } else if (mode === 'stretch') {
-                RoutineSystem.start('stretch');
-            }
+            if (mode === 'workout') RoutineSystem.stop();
+            else RoutineSystem.start(mode);
         };
 
-        /* ======================================================================
-           6. MAIN LOOP & AI
-           ====================================================================== */
         async function initApp() {
-            UI.init();
+            try {
+                UI.init();
+                STATE.video = document.getElementById('video');
+                STATE.canvas = document.getElementById('output');
+                STATE.ctx = STATE.canvas.getContext('2d');
+                STATE.canvas.width = CONFIG.videoWidth;
+                STATE.canvas.height = CONFIG.videoHeight;
 
-            STATE.video = document.getElementById('video');
-            STATE.canvas = document.getElementById('output');
-            STATE.ctx = STATE.canvas.getContext('2d');
+                // 1. Camera Init
+                STATUS.text.innerText = "Accessing Camera...";
+                if (navigator.mediaDevices.getUserMedia) {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { width: CONFIG.videoWidth, height: CONFIG.videoHeight }
+                    });
+                    STATE.video.srcObject = stream;
+                    await new Promise(r => STATE.video.onloadedmetadata = () => { STATE.video.play(); r(); });
+                } else {
+                    throw new Error("Camera not found or blocked.");
+                }
 
-            // Internal resolution for AI
-            STATE.canvas.width = CONFIG.videoWidth;
-            STATE.canvas.height = CONFIG.videoHeight;
+                // 2. TFJS Init
+                STATUS.text.innerText = "Initializing Graphics...";
+                await tf.setBackend('webgl');
+                await tf.ready();
 
-            // Camera Setup
-            if (navigator.mediaDevices.getUserMedia) {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { width: CONFIG.videoWidth, height: CONFIG.videoHeight }
-                });
-                STATE.video.srcObject = stream;
-                await new Promise(r => STATE.video.onloadedmetadata = () => {
-                    STATE.video.play();
-                    r();
-                });
+                // 3. AI Model Init
+                STATUS.text.innerText = "Downloading AI Model...";
+                STATUS.sub.innerText = "This might take 10-20 seconds...";
+                const detectorConfig = { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING };
+                STATE.detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, detectorConfig);
+
+                // 4. Start
+                STATE.isLoading = false;
+                STATUS.screen.style.display = 'none';
+                document.getElementById('hud-overlay').style.opacity = '1';
+                renderLoop();
+
+            } catch (err) {
+                console.error(err);
+                STATUS.spinner.style.display = 'none';
+                STATUS.text.innerText = "Error";
+                STATUS.sub.innerText = "Something went wrong.";
+                STATUS.error.style.display = 'block';
+                STATUS.error.innerText = err.message + "\n\nTry opening in a different browser or checking camera permissions.";
             }
-
-            // AI Setup
-            const detectorConfig = { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING };
-            STATE.detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, detectorConfig);
-            
-            STATE.isLoading = false;
-            document.getElementById('loading').style.display = 'none';
-
-            renderLoop();
         }
 
         async function renderLoop(timestamp) {
-            // Run AI (Throttled)
-            let pose = null;
             if (!STATE.isLoading && (timestamp - STATE.lastAiTime > (1000 / CONFIG.aiFps))) {
                 if (STATE.detector) {
                     try {
                         const poses = await STATE.detector.estimatePoses(STATE.video);
                         if (poses && poses.length > 0) {
-                            pose = poses[0];
-                            STATE.lastPose = pose;
+                            STATE.lastPose = poses[0];
                             RoutineSystem.update();
-                            ExerciseManager.getCurrent().update(pose);
+                            ExerciseManager.getCurrent().update(STATE.lastPose);
                         }
-                    } catch (e) { console.error(e); }
+                    } catch (e) {}
                 }
                 STATE.lastAiTime = timestamp;
-            } else {
-                pose = STATE.lastPose;
             }
-
-            // Draw Everything
-            drawFrame(pose);
-            
+            drawFrame(STATE.lastPose);
             requestAnimationFrame(renderLoop);
         }
 
         function drawFrame(pose) {
             const ctx = STATE.ctx;
-            // Clear
             ctx.clearRect(0, 0, CONFIG.videoWidth, CONFIG.videoHeight);
-            
-            // We do NOT draw the video on canvas anymore, we let the <video> tag show it.
-            // We only draw the skeleton on the transparent canvas.
             
             if (pose) {
                 drawSkeleton(pose);
@@ -825,23 +607,16 @@
 
         function drawSkeleton(pose) {
             const exercise = ExerciseManager.getCurrent();
-            let color = '#00FF00'; // Default Green
-            if (exercise.status === 'down' || exercise.status === 'star' || exercise.status === 'in') {
-                color = '#FFFF00'; // Active Yellow
-            }
+            let color = '#00FF00'; 
+            if (exercise.status === 'down' || exercise.status === 'star' || exercise.status === 'in') color = '#FFFF00';
 
             const connections = [
-                [5, 7], [7, 9], [6, 8], [8, 10], // Arms
-                [5, 6], [5, 11], [6, 12], [11, 12], // Torso
-                [11, 13], [13, 15], [12, 14], [14, 16] // Legs
+                [5, 7], [7, 9], [6, 8], [8, 10], [5, 6], [5, 11], [6, 12], [11, 12], [11, 13], [13, 15], [12, 14], [14, 16]
             ];
-
             STATE.ctx.lineWidth = 4;
             STATE.ctx.strokeStyle = color;
-            
             connections.forEach(([i, j]) => {
-                const p1 = pose.keypoints[i];
-                const p2 = pose.keypoints[j];
+                const p1 = pose.keypoints[i], p2 = pose.keypoints[j];
                 if (p1.score > 0.3 && p2.score > 0.3) {
                     STATE.ctx.beginPath();
                     STATE.ctx.moveTo(p1.x, p1.y);
@@ -849,8 +624,6 @@
                     STATE.ctx.stroke();
                 }
             });
-            
-            // Draw Dots
             STATE.ctx.fillStyle = 'red';
             pose.keypoints.forEach(p => {
                  if(p.score > 0.3) {
@@ -863,14 +636,10 @@
 
         function updateOverlay() {
             const exercise = ExerciseManager.getCurrent();
-            
-            // Title logic
             let label = exercise.name;
             if (RoutineSystem.active && RoutineSystem.queue[RoutineSystem.index]) {
                 label = RoutineSystem.queue[RoutineSystem.index].label;
             }
-
-            // Value Logic
             let val = exercise.count;
             if (RoutineSystem.active) {
                 val = RoutineSystem.timer + "s";
@@ -881,12 +650,10 @@
             } else {
                 document.getElementById('hud-value').style.color = "white";
             }
-            
             const isGood = (exercise.feedback.includes("Good") || exercise.feedback.includes("Hold"));
             UI.updateHUD(label, val, exercise.feedback, isGood);
         }
 
-        // Start
         window.onload = initApp;
 
     </script>
