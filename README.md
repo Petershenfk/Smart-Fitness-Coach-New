@@ -119,3 +119,4 @@ The project is built with vanilla JavaScript to ensure easy deployment with no b
 *   **TensorFlow.js:** https://www.tensorflow.org/js
 *   **MoveNet Model Documentation:** https://github.com/tensorflow/tfjs-models/tree/master/pose-detection/src/movenet
 *   **Pose Detection API:** https://github.com/tensorflow/tfjs-models/tree/master/pose-detection
+*   *Coding implimentation of the project is assisted by Google Gemini and Qwen*
