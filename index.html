@@ -35,15 +35,18 @@
 
         /* HEADER */
         header {
-            padding: 15px 20px;
+            height: 60px;
+            padding: 0 20px;
             background: var(--surface);
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid #333;
+            z-index: 10;
         }
 
         h1 { margin: 0; font-size: 1.5rem; color: var(--primary); }
+        
         .mode-controls button {
             background: #333;
             color: white;
@@ -66,16 +69,20 @@
         .main-container {
             display: flex;
             flex: 1;
-            height: calc(100vh - 70px);
+            height: calc(100vh - 60px); /* Fill remaining height */
+            overflow: hidden;
         }
 
         /* SIDEBAR (Exercise List) */
         .sidebar {
-            width: 250px;
+            width: 300px; /* Wider to fit names */
+            min-width: 250px;
             background: var(--surface);
             overflow-y: auto;
             border-right: 1px solid #333;
             padding: 10px;
+            display: flex;
+            flex-direction: column;
         }
         .sidebar h3 {
             margin-top: 0;
@@ -86,24 +93,28 @@
             text-transform: uppercase;
         }
         .exercise-item {
-            padding: 10px 15px;
+            padding: 12px 15px;
             margin-bottom: 5px;
             border-radius: 8px;
             cursor: pointer;
             transition: background 0.2s;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             display: flex;
             align-items: center;
+            white-space: nowrap; /* Prevent wrapping */
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .exercise-item:hover { background: #333; }
         .exercise-item.active {
-            background: rgba(0, 229, 255, 0.2);
+            background: rgba(0, 229, 255, 0.15);
             color: var(--primary);
             border-left: 4px solid var(--primary);
+            font-weight: bold;
         }
-        .exercise-item .status-icon { margin-right: 10px; font-size: 1.2em; }
+        .exercise-item .status-icon { margin-right: 10px; min-width: 25px; }
 
-        /* VIDEO AREA */
+        /* VIDEO AREA - FIT SCREEN FIX */
         .workspace {
             flex: 1;
             position: relative;
@@ -111,27 +122,64 @@
             display: flex;
             justify-content: center;
             align-items: center;
-        }
-        #video-container {
-            position: relative;
-            width: 640px;
-            height: 480px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            border-radius: 12px;
             overflow: hidden;
         }
-        video {
-            position: absolute;
-            top: 0; left: 0;
-            width: 640px; height: 480px;
-            transform: scaleX(-1); /* Mirror effect */
-            object-fit: cover;
+        
+        #video-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        canvas {
+
+        /* Video and Canvas stack on top of each other */
+        video, canvas {
             position: absolute;
-            top: 0; left: 0;
-            width: 640px; height: 480px;
-            transform: scaleX(-1); /* Mirror canvas too */
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Ensures whole video is visible without stretching */
+            transform: scaleX(-1); /* Mirror Effect */
+        }
+
+        /* HUD OVERLAY (HTML based, so it won't mirror) */
+        #hud-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 300px;
+            background: rgba(0, 0, 0, 0.75);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 5px solid var(--primary);
+            pointer-events: none; /* Let clicks pass through */
+            z-index: 20;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        #hud-title {
+            color: #ccc;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        #hud-value {
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            line-height: 1;
+        }
+        
+        #hud-feedback {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--active);
         }
 
         /* LOADING SPINNER */
@@ -142,13 +190,18 @@
             color: var(--primary);
             font-size: 1.5rem;
             text-align: center;
+            z-index: 50;
         }
 
         /* RESPONSIVE */
         @media (max-width: 900px) {
             .main-container { flex-direction: column-reverse; }
-            .sidebar { width: 100%; height: 200px; }
-            video, canvas, #video-container { width: 100%; height: auto; aspect-ratio: 4/3; }
+            .sidebar { width: 100%; height: 30%; border-right: none; border-top: 1px solid #333; }
+            .workspace { height: 70%; }
+            #hud-overlay { top: 10px; left: 10px; width: auto; right: 10px; padding: 10px; display: flex; justify-content: space-between; align-items: center;}
+            #hud-value { font-size: 32px; margin: 0; margin-right: 15px;}
+            #hud-feedback { font-size: 16px; }
+            #hud-title { display: none; } /* Hide title on mobile to save space */
         }
     </style>
 </head>
@@ -169,7 +222,7 @@
         
         <!-- SIDEBAR LIST -->
         <div class="sidebar">
-            <h3>Exercise List</h3>
+            <h3>Available Exercises</h3>
             <div id="exercise-list-container">
                 <!-- Javascript will populate this -->
             </div>
@@ -177,10 +230,21 @@
 
         <!-- VIDEO AREA -->
         <div class="workspace">
-            <div id="loading">Loading AI Model...</div>
+            <div id="loading">
+                <div>Loading AI Model...</div>
+                <div style="font-size: 0.8em; color: #888;">Please allow camera access</div>
+            </div>
+            
             <div id="video-container">
                 <video id="video" playsinline></video>
                 <canvas id="output"></canvas>
+                
+                <!-- NEW HTML HUD (Solves Mirroring Issue) -->
+                <div id="hud-overlay">
+                    <div id="hud-title">Ready</div>
+                    <div id="hud-value">0</div>
+                    <div id="hud-feedback">Get in position</div>
+                </div>
             </div>
         </div>
     </div>
@@ -191,9 +255,11 @@
            1. CONFIGURATION & STATE
            ====================================================================== */
         const CONFIG = {
+            // Internal resolution for AI (Lower = Faster). 
+            // We scale visually with CSS, so this can remain low for performance.
             videoWidth: 640,
             videoHeight: 480,
-            aiFps: 10, // AI throttled to 10 FPS for performance
+            aiFps: 10, 
         };
 
         const STATE = {
@@ -230,7 +296,7 @@
         };
 
         /* ======================================================================
-           3. EXERCISE CLASSES (THE BRAIN)
+           3. EXERCISE CLASSES
            ====================================================================== */
         class Exercise {
             constructor(name) {
@@ -526,24 +592,24 @@
         }
 
         /* ======================================================================
-           4. MANAGERS (Exercise & Routine)
+           4. MANAGERS (Exercise & Routine) - FIXED NAMES
            ====================================================================== */
         const ExerciseManager = {
             exercises: {
                 "squat": new Squat("Squat"),
                 "pushup": new PushUp("Push Up"),
                 "lunge": new Lunge("Lunge"),
-                "dip": new Dip("Dip"),
+                "dip": new Dip("Tricep Dip"),
                 "situp": new SitUp("Sit Up"),
                 "legraise": new LegRaise("Leg Raise"),
                 "donkeykick": new DonkeyKick("Donkey Kick"),
                 "calfraise": new CalfRaise("Calf Raise"),
                 "jumpingjack": new JumpingJack("Jumping Jack"),
-                "highknees": new HighKnees("High Knees"),
+                "highknees": new High Knees("High Knees"),
                 "buttkicks": new ButtKicks("Butt Kicks"),
                 "squatjump": new SquatJump("Squat Jump"),
                 "boxjump": new BoxJump("Box Jump"),
-                "plank": new Plank("Plank"),
+                "plank": new Plank("Plank Hold"),
                 "sideplank": new SidePlank("Side Plank"),
                 "wallsit": new WallSit("Wall Sit"),
                 "glutebridge": new GluteBridge("Glute Bridge"),
@@ -655,6 +721,13 @@
                     el.classList.add('active');
                     el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
+            },
+            updateHUD: function(title, value, feedback, isGood) {
+                document.getElementById('hud-title').innerText = title;
+                document.getElementById('hud-value').innerText = value;
+                const fbEl = document.getElementById('hud-feedback');
+                fbEl.innerText = feedback;
+                fbEl.style.color = isGood ? 'var(--active)' : 'var(--warning)';
             }
         };
 
@@ -684,6 +757,10 @@
             STATE.canvas = document.getElementById('output');
             STATE.ctx = STATE.canvas.getContext('2d');
 
+            // Internal resolution for AI
+            STATE.canvas.width = CONFIG.videoWidth;
+            STATE.canvas.height = CONFIG.videoHeight;
+
             // Camera Setup
             if (navigator.mediaDevices.getUserMedia) {
                 const stream = await navigator.mediaDevices.getUserMedia({
@@ -707,35 +784,43 @@
         }
 
         async function renderLoop(timestamp) {
-            // Draw Video
-            STATE.ctx.clearRect(0, 0, CONFIG.videoWidth, CONFIG.videoHeight);
-            STATE.ctx.save();
-            STATE.ctx.scale(-1, 1);
-            STATE.ctx.translate(-CONFIG.videoWidth, 0);
-            STATE.ctx.drawImage(STATE.video, 0, 0, CONFIG.videoWidth, CONFIG.videoHeight);
-            STATE.ctx.restore();
-
             // Run AI (Throttled)
+            let pose = null;
             if (!STATE.isLoading && (timestamp - STATE.lastAiTime > (1000 / CONFIG.aiFps))) {
                 if (STATE.detector) {
                     try {
                         const poses = await STATE.detector.estimatePoses(STATE.video);
                         if (poses && poses.length > 0) {
-                            STATE.lastPose = poses[0];
+                            pose = poses[0];
+                            STATE.lastPose = pose;
                             RoutineSystem.update();
-                            ExerciseManager.getCurrent().update(STATE.lastPose);
+                            ExerciseManager.getCurrent().update(pose);
                         }
                     } catch (e) { console.error(e); }
                 }
                 STATE.lastAiTime = timestamp;
+            } else {
+                pose = STATE.lastPose;
             }
 
-            // Draw Overlays
-            if (STATE.lastPose) {
-                drawSkeleton(STATE.lastPose);
-                drawHUD();
-            }
+            // Draw Everything
+            drawFrame(pose);
+            
             requestAnimationFrame(renderLoop);
+        }
+
+        function drawFrame(pose) {
+            const ctx = STATE.ctx;
+            // Clear
+            ctx.clearRect(0, 0, CONFIG.videoWidth, CONFIG.videoHeight);
+            
+            // We do NOT draw the video on canvas anymore, we let the <video> tag show it.
+            // We only draw the skeleton on the transparent canvas.
+            
+            if (pose) {
+                drawSkeleton(pose);
+                updateOverlay();
+            }
         }
 
         function drawSkeleton(pose) {
@@ -753,6 +838,7 @@
 
             STATE.ctx.lineWidth = 4;
             STATE.ctx.strokeStyle = color;
+            
             connections.forEach(([i, j]) => {
                 const p1 = pose.keypoints[i];
                 const p2 = pose.keypoints[j];
@@ -763,41 +849,41 @@
                     STATE.ctx.stroke();
                 }
             });
+            
+            // Draw Dots
+            STATE.ctx.fillStyle = 'red';
+            pose.keypoints.forEach(p => {
+                 if(p.score > 0.3) {
+                     STATE.ctx.beginPath();
+                     STATE.ctx.arc(p.x, p.y, 5, 0, 2*Math.PI);
+                     STATE.ctx.fill();
+                 }
+            });
         }
 
-        function drawHUD() {
-            const ctx = STATE.ctx;
+        function updateOverlay() {
             const exercise = ExerciseManager.getCurrent();
             
-            // Info Box
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-            ctx.fillRect(10, 10, 250, 120);
-
-            // Title
-            ctx.font = "16px Segoe UI";
-            ctx.fillStyle = "#ccc";
-            let label = exercise.name.toUpperCase();
+            // Title logic
+            let label = exercise.name;
             if (RoutineSystem.active && RoutineSystem.queue[RoutineSystem.index]) {
-                label = RoutineSystem.queue[RoutineSystem.index].label.toUpperCase();
+                label = RoutineSystem.queue[RoutineSystem.index].label;
             }
-            ctx.fillText(label, 20, 40);
 
-            // Count / Time
-            ctx.font = "bold 40px Segoe UI";
-            ctx.fillStyle = "#fff";
+            // Value Logic
             let val = exercise.count;
             if (RoutineSystem.active) {
                 val = RoutineSystem.timer + "s";
-                ctx.fillStyle = "#00e5ff"; // Blue for timer
+                document.getElementById('hud-value').style.color = "#00e5ff";
             } else if (exercise.type === 'time') {
                 val += "s";
+                document.getElementById('hud-value').style.color = "white";
+            } else {
+                document.getElementById('hud-value').style.color = "white";
             }
-            ctx.fillText(val, 20, 85);
-
-            // Feedback
-            ctx.font = "18px Segoe UI";
-            ctx.fillStyle = (exercise.feedback.includes("Good") || exercise.feedback.includes("Hold")) ? "#00e676" : "#ffea00";
-            ctx.fillText(exercise.feedback, 20, 115);
+            
+            const isGood = (exercise.feedback.includes("Good") || exercise.feedback.includes("Hold"));
+            UI.updateHUD(label, val, exercise.feedback, isGood);
         }
 
         // Start
