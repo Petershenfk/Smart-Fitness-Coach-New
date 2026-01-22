@@ -2,99 +2,128 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AI Smart Fitness Coach</title>
     <style>
+        :root {
+            --primary-color: #00d2ff;
+            --bg-color: #1a1a1a;
+            --overlay-bg: rgba(0, 0, 0, 0.85);
+        }
+
         body {
             margin: 0;
             padding: 0;
-            background-color: #1a1a1a;
+            background-color: var(--bg-color);
             color: #ffffff;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden; /* Prevent scrolling during workout */
+            overflow: hidden; /* Prevent scrolling */
             display: flex;
             flex-direction: column;
             align-items: center;
             height: 100vh;
+            width: 100vw;
         }
 
-        /* Main container for Video and Canvas */
+        /* Header Area */
+        header {
+            text-align: center;
+            padding: 10px 0;
+            flex-shrink: 0;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        #status-display {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-top: 5px;
+        }
+
+        /* Main Video/Canvas Container - Responsive */
         #canvas-wrapper {
             position: relative;
-            width: 640px;
-            height: 480px;
-            margin-top: 20px;
-            border: 2px solid #00d2ff;
+            width: 100%;
+            max-width: 640px; /* Limit max width on desktop */
+            aspect-ratio: 4 / 3; /* Maintain camera aspect ratio */
+            margin: 10px auto;
+            border: 2px solid var(--primary-color);
             border-radius: 8px;
             box-shadow: 0 0 20px rgba(0, 210, 255, 0.2);
             background: #000;
+            overflow: hidden;
+            flex-shrink: 1; /* Allow shrinking on small screens */
         }
 
-        #video {
+        #video, #output {
             position: absolute;
             top: 0;
             left: 0;
-            width: 640px;
-            height: 480px;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Ensure it fills container */
             transform: scaleX(-1); /* Mirror effect */
-            display: block;
         }
 
         #output {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 640px;
-            height: 480px;
-            transform: scaleX(-1); /* Mirror effect to match video */
             z-index: 1;
         }
 
-        /* UI Controls Area */
+        /* Controls Area */
         #controls {
-            margin-top: 20px;
+            margin: 10px 0;
             display: flex;
-            gap: 15px;
+            gap: 10px;
             z-index: 10;
+            flex-wrap: wrap; /* Wrap buttons on very small screens */
+            justify-content: center;
+            width: 90%;
+            flex-shrink: 0;
         }
 
         button {
-            padding: 10px 20px;
-            font-size: 16px;
+            padding: 12px 16px;
+            font-size: 14px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            background-color: #00d2ff;
+            background-color: var(--primary-color);
             color: #000;
             font-weight: bold;
             transition: background 0.3s;
+            flex: 1 1 auto; /* Grow to fill space on mobile */
+            max-width: 150px;
         }
 
         button:hover {
             background-color: #00a5c9;
         }
 
-        #status-display {
-            margin-top: 10px;
-            font-size: 24px;
-            font-weight: bold;
-            color: #00d2ff;
+        button:active {
+            transform: scale(0.98);
         }
 
-        /* NEW: Exercise Library Sidebar */
+        /* Exercise Library Sidebar */
         #exercise-sidebar {
             position: absolute;
             right: 0;
             top: 0;
             bottom: 0;
-            width: 250px;
-            background: rgba(0, 0, 0, 0.85);
+            width: 300px;
+            max-width: 80%; /* Don't cover full screen on mobile */
+            background: var(--overlay-bg);
             border-left: 1px solid #333;
             padding: 20px;
             overflow-y: auto;
             transform: translateX(100%);
             transition: transform 0.3s ease-in-out;
             z-index: 100;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+            padding-top: 60px; /* Space for close button */
         }
 
         #exercise-sidebar.active {
@@ -102,7 +131,7 @@
         }
 
         #exercise-sidebar h3 {
-            color: #00d2ff;
+            color: var(--primary-color);
             border-bottom: 1px solid #555;
             padding-bottom: 5px;
             margin-top: 20px;
@@ -119,31 +148,76 @@
         }
 
         #exercise-sidebar li {
-            padding: 5px 0;
+            padding: 8px 0;
             border-bottom: 1px solid #333;
             font-size: 14px;
             color: #ddd;
         }
 
-        #exercise-sidebar li:hover {
-            color: #fff;
-            padding-left: 5px;
-            transition: 0.2s;
-        }
-
-        /* Toggle Button for Sidebar */
+        /* Toggle Button */
         #toggle-list-btn {
             position: absolute;
-            top: 20px;
-            right: 20px;
+            top: 15px;
+            right: 15px;
             z-index: 101;
-            background: #333;
+            background: rgba(51, 51, 51, 0.8);
             color: white;
             border: 1px solid #555;
+            width: auto;
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 600px) {
+            h1 { font-size: 1.2rem; }
+            
+            #canvas-wrapper {
+                width: 95%;
+                margin: 5px auto;
+            }
+
+            #controls {
+                margin-bottom: 20px;
+            }
+
+            /* Adjust sidebar for mobile */
+            #exercise-sidebar {
+                width: 100%; /* Full width on very small screens */
+                max-width: 100%;
+            }
+
+            #toggle-list-btn {
+                top: 10px;
+                right: 10px;
+            }
+        }
+        
+        /* Landscape on Mobile */
+        @media (max-height: 500px) and (orientation: landscape) {
+            body {
+                flex-direction: row;
+                padding: 10px;
+                justify-content: center;
+            }
+            
+            header { display: none; } /* Hide header to save vertical space */
+            
+            #canvas-wrapper {
+                height: 90vh;
+                width: auto; /* Width determined by aspect ratio */
+                margin: 0 20px;
+            }
+            
+            #controls {
+                flex-direction: column;
+                width: auto;
+                justify-content: center;
+            }
         }
     </style>
     
-    <!-- Load TensorFlow.js and MoveNet -->
+    <!-- TensorFlow.js Dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
@@ -151,29 +225,30 @@
 </head>
 <body>
 
-    <!-- Header -->
-    <h1>Smart Fitness Coach</h1>
-    <div id="status-display">Loading AI Model...</div>
+    <header>
+        <h1>Smart Fitness Coach</h1>
+        <div id="status-display">Loading AI Model...</div>
+    </header>
 
-    <!-- Main Viewport -->
+    <!-- Canvas Wrapper -->
     <div id="canvas-wrapper">
         <video id="video" playsinline></video>
         <canvas id="output"></canvas>
     </div>
 
-    <!-- Mode Controls -->
+    <!-- Interface Controls -->
     <div id="controls">
         <button id="btn-warmup" onclick="startRoutine('warmup')">Warm Up</button>
         <button id="btn-stretch" onclick="startRoutine('stretch')">Stretching</button>
         <button id="btn-free" onclick="startMode('free')">Free Workout</button>
     </div>
 
-    <!-- NEW: Toggle Button -->
-    <button id="toggle-list-btn" onclick="toggleSidebar()">Show Exercise List</button>
+    <!-- Menu Toggle -->
+    <button id="toggle-list-btn" onclick="toggleSidebar()">List</button>
 
-    <!-- NEW: Exercise Library Sidebar -->
+    <!-- Exercise Library Panel -->
     <div id="exercise-sidebar">
-        <h2>Exercise Library</h2>
+        <h2>Library</h2>
         
         <h3>Strength</h3>
         <ul>
@@ -213,12 +288,10 @@
         </ul>
     </div>
 
-    <!-- Project Scripts -->
-    <!-- Assuming these files exist in your folder structure -->
+    <!-- Core Application Scripts -->
     <script src="Exercise.js"></script>
     <script src="Script.js"></script>
 
-    <!-- Sidebar Toggle Logic -->
     <script>
         function toggleSidebar() {
             const sidebar = document.getElementById('exercise-sidebar');
@@ -227,26 +300,25 @@
             sidebar.classList.toggle('active');
             
             if (sidebar.classList.contains('active')) {
-                btn.innerText = "Hide Exercise List";
-                btn.style.right = "270px"; // Move button with sidebar
+                btn.innerText = "Close";
             } else {
-                btn.innerText = "Show Exercise List";
-                btn.style.right = "20px";
+                btn.innerText = "List";
             }
         }
 
-        // Placeholder functions to prevent errors if Script.js isn't loaded yet
-        // These bridge the UI to your actual logic
+        // Bridge functions for UI interaction stability
         if (typeof startRoutine === 'undefined') {
             window.startRoutine = function(mode) {
-                console.log("Starting routine:", mode);
-                document.getElementById('status-display').innerText = "Mode: " + mode.toUpperCase();
+                console.log("Routine started: " + mode);
+                const status = document.getElementById('status-display');
+                if(status) status.innerText = "Mode: " + mode.toUpperCase();
             };
         }
         if (typeof startMode === 'undefined') {
             window.startMode = function(mode) {
-                console.log("Starting mode:", mode);
-                document.getElementById('status-display').innerText = "Mode: Free Workout";
+                console.log("Mode started: " + mode);
+                const status = document.getElementById('status-display');
+                if(status) status.innerText = "Mode: Free Workout";
             };
         }
     </script>
