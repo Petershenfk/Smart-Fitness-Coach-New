@@ -7,214 +7,190 @@
     <style>
         :root {
             --primary-color: #00d2ff;
-            --bg-color: #1a1a1a;
-            --overlay-bg: rgba(0, 0, 0, 0.85);
+            --bg-color: #000000;
+            --panel-bg: rgba(20, 20, 20, 0.95);
+            --text-color: #ffffff;
         }
 
         body {
             margin: 0;
             padding: 0;
             background-color: var(--bg-color);
-            color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden; /* Prevent scrolling */
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            height: 100dvh; /* Use dynamic viewport height for mobile browsers */
             display: flex;
             flex-direction: column;
-            align-items: center;
-            height: 100vh;
-            width: 100vw;
+            overflow: hidden;
         }
 
-        /* Header Area */
+        /* --- Header --- */
         header {
+            flex: 0 0 auto;
             text-align: center;
-            padding: 10px 0;
-            flex-shrink: 0;
+            padding: 10px;
+            background: rgba(0,0,0,0.5);
+            z-index: 20;
         }
 
         h1 {
             margin: 0;
-            font-size: 1.5rem;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
         }
 
         #status-display {
-            font-size: 1.2rem;
-            font-weight: bold;
+            font-size: 0.9rem;
             color: var(--primary-color);
-            margin-top: 5px;
+            margin-top: 4px;
+            font-weight: 600;
         }
 
-        /* Main Video/Canvas Container - Responsive */
+        /* --- Main Video Area --- */
         #canvas-wrapper {
+            flex: 1; /* Take up all remaining space */
             position: relative;
             width: 100%;
-            max-width: 640px; /* Limit max width on desktop */
-            aspect-ratio: 4 / 3; /* Maintain camera aspect ratio */
-            margin: 10px auto;
-            border: 2px solid var(--primary-color);
-            border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0, 210, 255, 0.2);
-            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             overflow: hidden;
-            flex-shrink: 1; /* Allow shrinking on small screens */
+            background: #111;
         }
 
+        /* Video and Canvas Layering */
         #video, #output {
             position: absolute;
-            top: 0;
-            left: 0;
+            /* Use contain to ensure full body is visible regardless of screen aspect ratio */
             width: 100%;
             height: 100%;
-            object-fit: cover; /* Ensure it fills container */
-            transform: scaleX(-1); /* Mirror effect */
+            object-fit: contain; 
+            /* Mirror the entire view so user sees reflection */
+            transform: scaleX(-1);
         }
 
         #output {
-            z-index: 1;
+            z-index: 10;
         }
 
-        /* Controls Area */
+        /* --- Controls --- */
         #controls {
-            margin: 10px 0;
+            flex: 0 0 auto; /* Don't stretch */
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.8);
             display: flex;
-            gap: 10px;
-            z-index: 10;
-            flex-wrap: wrap; /* Wrap buttons on very small screens */
             justify-content: center;
-            width: 90%;
-            flex-shrink: 0;
+            gap: 10px;
+            flex-wrap: wrap;
+            z-index: 30;
+            border-top: 1px solid #333;
         }
 
         button {
-            padding: 12px 16px;
-            font-size: 14px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
             background-color: var(--primary-color);
             color: #000;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 1rem;
             font-weight: bold;
-            transition: background 0.3s;
-            flex: 1 1 auto; /* Grow to fill space on mobile */
-            max-width: 150px;
-        }
-
-        button:hover {
-            background-color: #00a5c9;
+            cursor: pointer;
+            touch-action: manipulation; /* Improves touch response */
+            flex: 1 1 30%; /* Grow to fill space, min 30% width */
+            max-width: 200px;
+            min-width: 100px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            transition: transform 0.1s, background 0.2s;
         }
 
         button:active {
-            transform: scale(0.98);
+            transform: scale(0.96);
+            background-color: #00a5c9;
         }
 
-        /* Exercise Library Sidebar */
+        /* --- Sidebar (Exercise List) --- */
         #exercise-sidebar {
             position: absolute;
-            right: 0;
             top: 0;
+            right: 0;
             bottom: 0;
-            width: 300px;
-            max-width: 80%; /* Don't cover full screen on mobile */
-            background: var(--overlay-bg);
-            border-left: 1px solid #333;
-            padding: 20px;
-            overflow-y: auto;
-            transform: translateX(100%);
-            transition: transform 0.3s ease-in-out;
+            width: 85%; /* Mobile friendly width */
+            max-width: 300px;
+            background: var(--panel-bg);
             z-index: 100;
-            box-shadow: -5px 0 15px rgba(0,0,0,0.5);
-            padding-top: 60px; /* Space for close button */
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid #333;
+            box-shadow: -10px 0 20px rgba(0,0,0,0.5);
         }
 
         #exercise-sidebar.active {
             transform: translateX(0);
         }
 
-        #exercise-sidebar h3 {
-            color: var(--primary-color);
-            border-bottom: 1px solid #555;
-            padding-bottom: 5px;
-            margin-top: 20px;
+        .sidebar-header {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
         }
 
-        #exercise-sidebar h2 {
-            margin-top: 0;
-            text-align: center;
+        .sidebar-content {
+            overflow-y: auto;
+            flex: 1;
+            padding: 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .close-btn {
+            background: transparent;
+            color: #fff;
+            font-size: 1.5rem;
+            padding: 5px;
+            min-width: auto;
+            box-shadow: none;
+        }
+
+        #exercise-sidebar h3 {
+            color: var(--primary-color);
+            margin-top: 20px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
         }
 
         #exercise-sidebar ul {
             list-style: none;
             padding: 0;
+            margin: 0;
         }
 
         #exercise-sidebar li {
-            padding: 8px 0;
+            padding: 12px 0;
             border-bottom: 1px solid #333;
-            font-size: 14px;
-            color: #ddd;
+            color: #ccc;
         }
 
-        /* Toggle Button */
-        #toggle-list-btn {
+        /* --- Menu Toggle Button --- */
+        #menu-toggle {
             position: absolute;
             top: 15px;
             right: 15px;
-            z-index: 101;
-            background: rgba(51, 51, 51, 0.8);
+            z-index: 50;
+            background: rgba(0, 0, 0, 0.6);
             color: white;
             border: 1px solid #555;
-            width: auto;
             padding: 8px 12px;
-            font-size: 12px;
+            font-size: 0.9rem;
+            border-radius: 8px;
+            flex: none;
+            width: auto;
+            min-width: auto;
         }
 
-        /* Mobile Adjustments */
-        @media (max-width: 600px) {
-            h1 { font-size: 1.2rem; }
-            
-            #canvas-wrapper {
-                width: 95%;
-                margin: 5px auto;
-            }
-
-            #controls {
-                margin-bottom: 20px;
-            }
-
-            /* Adjust sidebar for mobile */
-            #exercise-sidebar {
-                width: 100%; /* Full width on very small screens */
-                max-width: 100%;
-            }
-
-            #toggle-list-btn {
-                top: 10px;
-                right: 10px;
-            }
-        }
-        
-        /* Landscape on Mobile */
-        @media (max-height: 500px) and (orientation: landscape) {
-            body {
-                flex-direction: row;
-                padding: 10px;
-                justify-content: center;
-            }
-            
-            header { display: none; } /* Hide header to save vertical space */
-            
-            #canvas-wrapper {
-                height: 90vh;
-                width: auto; /* Width determined by aspect ratio */
-                margin: 0 20px;
-            }
-            
-            #controls {
-                flex-direction: column;
-                width: auto;
-                justify-content: center;
-            }
-        }
     </style>
     
     <!-- TensorFlow.js Dependencies -->
@@ -227,98 +203,120 @@
 
     <header>
         <h1>Smart Fitness Coach</h1>
-        <div id="status-display">Loading AI Model...</div>
+        <div id="status-display">Initializing...</div>
     </header>
 
-    <!-- Canvas Wrapper -->
     <div id="canvas-wrapper">
         <video id="video" playsinline></video>
         <canvas id="output"></canvas>
     </div>
 
-    <!-- Interface Controls -->
-    <div id="controls">
-        <button id="btn-warmup" onclick="startRoutine('warmup')">Warm Up</button>
-        <button id="btn-stretch" onclick="startRoutine('stretch')">Stretching</button>
-        <button id="btn-free" onclick="startMode('free')">Free Workout</button>
-    </div>
-
     <!-- Menu Toggle -->
-    <button id="toggle-list-btn" onclick="toggleSidebar()">List</button>
+    <button id="menu-toggle" onclick="toggleSidebar()">Exercises</button>
 
-    <!-- Exercise Library Panel -->
-    <div id="exercise-sidebar">
-        <h2>Library</h2>
-        
-        <h3>Strength</h3>
-        <ul>
-            <li>Squat</li>
-            <li>Push-up</li>
-            <li>Lunge</li>
-            <li>Dip</li>
-            <li>Sit-up</li>
-            <li>Leg Raise</li>
-            <li>Donkey Kick</li>
-            <li>Calf Raise</li>
-        </ul>
-
-        <h3>Cardio</h3>
-        <ul>
-            <li>Jumping Jack</li>
-            <li>High Knees</li>
-            <li>Butt Kicks</li>
-            <li>Squat Jump</li>
-            <li>Box Jump</li>
-            <li>Mountain Climber</li>
-            <li>Burpee</li>
-        </ul>
-
-        <h3>Static / Core</h3>
-        <ul>
-            <li>Plank</li>
-            <li>Side Plank</li>
-            <li>Wall Sit</li>
-            <li>Glute Bridge</li>
-        </ul>
-
-        <h3>Flexibility</h3>
-        <ul>
-            <li>Side Stretch</li>
-            <li>Forward Fold</li>
-        </ul>
+    <div id="controls">
+        <button onclick="startRoutine('warmup')">Warm Up</button>
+        <button onclick="startRoutine('stretch')">Stretching</button>
+        <button onclick="startMode('free')">Free Workout</button>
     </div>
 
-    <!-- Core Application Scripts -->
+    <!-- Sidebar -->
+    <div id="exercise-sidebar">
+        <div class="sidebar-header">
+            <h2 style="margin:0">Library</h2>
+            <button class="close-btn" onclick="toggleSidebar()">×</button>
+        </div>
+        <div class="sidebar-content">
+            <h3>Strength</h3>
+            <ul>
+                <li>Squat</li>
+                <li>Push-up</li>
+                <li>Lunge</li>
+                <li>Dip</li>
+                <li>Sit-up</li>
+                <li>Leg Raise</li>
+                <li>Donkey Kick</li>
+                <li>Calf Raise</li>
+            </ul>
+
+            <h3>Cardio</h3>
+            <ul>
+                <li>Jumping Jack</li>
+                <li>High Knees</li>
+                <li>Butt Kicks</li>
+                <li>Squat Jump</li>
+                <li>Box Jump</li>
+                <li>Mountain Climber</li>
+                <li>Burpee</li>
+            </ul>
+
+            <h3>Static / Core</h3>
+            <ul>
+                <li>Plank</li>
+                <li>Side Plank</li>
+                <li>Wall Sit</li>
+                <li>Glute Bridge</li>
+            </ul>
+
+            <h3>Flexibility</h3>
+            <ul>
+                <li>Side Stretch</li>
+                <li>Forward Fold</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- --- PATCH: Text Mirror Fix --- -->
+    <script>
+        /**
+         * This script intercepts canvas text drawing. 
+         * Because the canvas is flipped via CSS (to mirror the webcam), 
+         * standard text appears backwards. This patch draws the text 
+         * "backwards" in JS so that the CSS flip renders it correctly.
+         */
+        (function() {
+            const originalFillText = CanvasRenderingContext2D.prototype.fillText;
+            const originalStrokeText = CanvasRenderingContext2D.prototype.strokeText;
+
+            CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
+                this.save();
+                this.translate(x, y);
+                this.scale(-1, 1); // Flip context horizontally
+                originalFillText.call(this, text, 0, 0, maxWidth);
+                this.restore();
+            };
+
+            CanvasRenderingContext2D.prototype.strokeText = function(text, x, y, maxWidth) {
+                this.save();
+                this.translate(x, y);
+                this.scale(-1, 1); // Flip context horizontally
+                originalStrokeText.call(this, text, 0, 0, maxWidth);
+                this.restore();
+            };
+        })();
+    </script>
+
+    <!-- Project Scripts -->
     <script src="Exercise.js"></script>
     <script src="Script.js"></script>
 
+    <!-- UI Logic -->
     <script>
         function toggleSidebar() {
-            const sidebar = document.getElementById('exercise-sidebar');
-            const btn = document.getElementById('toggle-list-btn');
-            
-            sidebar.classList.toggle('active');
-            
-            if (sidebar.classList.contains('active')) {
-                btn.innerText = "Close";
-            } else {
-                btn.innerText = "List";
-            }
+            document.getElementById('exercise-sidebar').classList.toggle('active');
         }
 
-        // Bridge functions for UI interaction stability
+        // Bridge functions for stability
         if (typeof startRoutine === 'undefined') {
             window.startRoutine = function(mode) {
                 console.log("Routine started: " + mode);
-                const status = document.getElementById('status-display');
-                if(status) status.innerText = "Mode: " + mode.toUpperCase();
+                document.getElementById('status-display').innerText = mode.toUpperCase();
             };
         }
         if (typeof startMode === 'undefined') {
             window.startMode = function(mode) {
                 console.log("Mode started: " + mode);
-                const status = document.getElementById('status-display');
-                if(status) status.innerText = "Mode: Free Workout";
+                document.getElementById('status-display').innerText = "FREE WORKOUT";
             };
         }
     </script>
