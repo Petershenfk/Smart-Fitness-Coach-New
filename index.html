@@ -63,6 +63,7 @@
             color: var(--primary-color);
             font-weight: 600;
             margin-top: 2px;
+            transition: color 0.3s;
         }
 
         /* --- Top Right Actions --- */
@@ -90,7 +91,7 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background-color: var(--loading-color); /* Default: Loading */
+            background-color: var(--loading-color);
             box-shadow: 0 0 8px var(--loading-color);
             transition: background-color 0.3s, box-shadow 0.3s;
         }
@@ -124,7 +125,6 @@
             flex: 1;
             position: relative;
             width: 100%;
-            /* FIX 1: Object fit cover ensures canvas and video align perfectly without letterboxing offsets */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -145,9 +145,7 @@
             position: absolute;
             width: 100%;
             height: 100%;
-            /* FIX 1: 'cover' makes video fill the box. Both elements scale identically. */
             object-fit: cover; 
-            /* FIX 1: Mirror BOTH elements so skeleton aligns with video */
             transform: scaleX(-1); 
         }
 
@@ -155,19 +153,18 @@
             z-index: 10;
         }
 
-        /* --- Hint Notification (Fixed Size) --- */
+        /* --- Hint Notification --- */
         #guidance-overlay {
             position: absolute;
-            top: 20px; /* Position relative to canvas wrapper */
+            top: 20px; 
             left: 50%;
             transform: translate(-50%, -20px);
             background: rgba(255, 23, 68, 0.95);
             backdrop-filter: blur(4px);
             color: white;
-            /* FIX 2: Smaller size and padding */
             padding: 8px 16px; 
             border-radius: 20px;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             font-weight: 600;
             letter-spacing: 0.02em;
             box-shadow: 0 4px 20px rgba(0,0,0,0.4);
@@ -180,7 +177,7 @@
 
         #guidance-overlay.active {
             opacity: 1;
-            transform: translate(-50%, 0); /* Slide down effect */
+            transform: translate(-50%, 0);
         }
 
         /* --- Floating Control Bar --- */
@@ -203,13 +200,24 @@
             backdrop-filter: blur(12px);
             border: 1px solid var(--surface-border);
             color: var(--text-main);
-            padding: 14px 0;
+            padding: 16px 0;
             border-radius: var(--radius-md);
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 600;
             font-family: var(--font-stack);
             cursor: pointer;
             transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        button span.sub {
+            font-size: 0.65rem;
+            color: #ccc;
+            font-weight: 400;
         }
 
         button:active { transform: scale(0.96); }
@@ -218,7 +226,10 @@
             background: var(--primary-color);
             border: none;
             box-shadow: 0 4px 15px rgba(41, 121, 255, 0.3);
+            color: white;
         }
+        
+        button.primary-action span.sub { color: rgba(255,255,255,0.8); }
 
         /* --- Sidebar --- */
         #exercise-sidebar {
@@ -267,11 +278,11 @@
     <header>
         <div class="brand">
             <h1>Magic Mirror</h1>
-            <div id="status-text">Ready</div>
+            <div id="status-text">Ready to Workout</div>
         </div>
         
         <div class="header-actions">
-            <!-- FIX 3: AI Status Indicator -->
+            <!-- AI Status Indicator -->
             <div id="ai-pill" class="ai-status-pill status-yellow" title="Model Status">
                 <div class="status-dot"></div>
                 <span>AI</span>
@@ -282,18 +293,29 @@
     </header>
 
     <div id="canvas-wrapper">
-        <!-- FIX 1: Both elements have 'object-fit: cover' and 'scaleX(-1)' -->
         <video id="video" playsinline></video>
         <canvas id="output"></canvas>
         
-        <!-- FIX 2: Hint moved inside wrapper, smaller size -->
+        <!-- Hint Overlay -->
         <div id="guidance-overlay">Too Close!</div>
     </div>
 
+    <!-- NEW CONTROLS for the 3 Routines -->
     <div id="controls">
-        <button onclick="startRoutine('warmup')">Warm Up</button>
-        <button onclick="startRoutine('stretch')">Stretch</button>
-        <button class="primary-action" onclick="startMode('free')">Start</button>
+        <button onclick="window.routineManager.start('upperBody')">
+            Upper Body
+            <span class="sub">10 Min</span>
+        </button>
+        
+        <button onclick="window.routineManager.start('lowerBody')">
+            Lower Body
+            <span class="sub">10 Min</span>
+        </button>
+        
+        <button class="primary-action" onclick="window.routineManager.start('fullBody')">
+            Full Body
+            <span class="sub">HIIT</span>
+        </button>
     </div>
 
     <!-- Sidebar -->
@@ -319,7 +341,6 @@
     </div>
 
     <!-- --- PATCH: Text Mirror Fix --- -->
-    <!-- Ensures text is readable even though canvas is mirrored -->
     <script>
         (function() {
             const originalFillText = CanvasRenderingContext2D.prototype.fillText;
@@ -343,8 +364,11 @@
         })();
     </script>
 
+    <!-- Project Scripts -->
     <script src="Exercise.js"></script>
     <script src="Script.js"></script>
+    <!-- New Routine Manager -->
+    <script src="Routines.js"></script> 
 
     <!-- Logic -->
     <script>
@@ -365,30 +389,34 @@
             }
         };
 
-        // 2. Update AI Status (Red/Yellow/Green)
-        // Call window.setAIStatus('green') when model is loaded
+        // 2. Update AI Status
         window.setAIStatus = function(state) {
             const pill = document.getElementById('ai-pill');
+            const statusText = document.getElementById('status-text');
             pill.classList.remove('status-red', 'status-yellow', 'status-green');
             
             if (state === 'green' || state === 'ready') {
                 pill.classList.add('status-green');
-                document.getElementById('status-text').innerText = "AI Active";
+                // Only update text if not in a routine
+                if (!window.routineManager || !window.routineManager.active) {
+                    statusText.innerText = "AI Ready";
+                }
             } else if (state === 'red' || state === 'error') {
                 pill.classList.add('status-red');
-                document.getElementById('status-text').innerText = "AI Offline";
+                statusText.innerText = "AI Offline";
             } else {
                 pill.classList.add('status-yellow');
-                document.getElementById('status-text').innerText = "Loading...";
+                statusText.innerText = "Loading AI...";
             }
         };
 
-        // UI Mockup Bridges
-        if (typeof startRoutine === 'undefined') window.startRoutine = (m) => console.log(m);
-        if (typeof startMode === 'undefined') window.startMode = (m) => console.log(m);
+        // Mockups to prevent crashes if Script.js is missing
+        if (typeof startMode === 'undefined') {
+            window.startMode = (m) => console.log(`[Mock] Mode switched to: ${m}`);
+        }
         
-        // Example: simulate AI loading then ready (remove this in production)
-        setTimeout(() => window.setAIStatus('green'), 3000);
+        // Simulating AI Load for demo
+        setTimeout(() => window.setAIStatus('green'), 2500);
     </script>
 </body>
 </html>
