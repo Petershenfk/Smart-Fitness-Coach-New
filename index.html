@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Smart Fitness Coach</title>
+    <title>Magic Mirror - Your Personal Fitness Coach</title>
     <style>
         :root {
             --primary-color: #00d2ff;
+            --warning-color: #ff4757;
             --bg-color: #000000;
             --panel-bg: rgba(20, 20, 20, 0.95);
             --text-color: #ffffff;
@@ -18,7 +19,7 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            height: 100dvh; /* Use dynamic viewport height for mobile browsers */
+            height: 100dvh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -28,27 +29,28 @@
         header {
             flex: 0 0 auto;
             text-align: center;
-            padding: 10px;
+            padding: 8px;
             background: rgba(0,0,0,0.5);
             z-index: 20;
         }
 
         h1 {
             margin: 0;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             letter-spacing: 1px;
+            opacity: 0.9;
         }
 
         #status-display {
             font-size: 0.9rem;
             color: var(--primary-color);
-            margin-top: 4px;
+            margin-top: 2px;
             font-weight: 600;
         }
 
         /* --- Main Video Area --- */
         #canvas-wrapper {
-            flex: 1; /* Take up all remaining space */
+            flex: 1;
             position: relative;
             width: 100%;
             display: flex;
@@ -58,26 +60,57 @@
             background: #111;
         }
 
-        /* Video and Canvas Layering */
+        /* Video and Canvas */
         #video, #output {
             position: absolute;
-            /* Use contain to ensure full body is visible regardless of screen aspect ratio */
             width: 100%;
             height: 100%;
             object-fit: contain; 
-            /* Mirror the entire view so user sees reflection */
-            transform: scaleX(-1);
+            transform: scaleX(-1); /* Mirror the video */
         }
 
         #output {
             z-index: 10;
         }
 
+        /* --- NEW: Guidance/Hint Overlay --- */
+        #guidance-overlay {
+            position: absolute;
+            top: 15%;
+            left: 50%;
+            transform: translate(-50%, 0);
+            background: rgba(255, 71, 87, 0.9); /* Red warning color */
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            z-index: 50;
+            opacity: 0; /* Hidden by default */
+            transition: opacity 0.3s ease;
+            pointer-events: none; /* Let clicks pass through */
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        #guidance-overlay.active {
+            opacity: 1;
+            animation: pulse-warning 1.5s infinite;
+        }
+
+        @keyframes pulse-warning {
+            0% { transform: translate(-50%, 0) scale(1); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); }
+            70% { transform: translate(-50%, 0) scale(1.05); box-shadow: 0 0 0 10px rgba(255, 71, 87, 0); }
+            100% { transform: translate(-50%, 0) scale(1); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
+        }
+
         /* --- Controls --- */
         #controls {
-            flex: 0 0 auto; /* Don't stretch */
+            flex: 0 0 auto;
             padding: 15px;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.85);
             display: flex;
             justify-content: center;
             gap: 10px;
@@ -92,12 +125,12 @@
             border: none;
             padding: 12px 20px;
             border-radius: 25px;
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: bold;
             cursor: pointer;
-            touch-action: manipulation; /* Improves touch response */
-            flex: 1 1 30%; /* Grow to fill space, min 30% width */
-            max-width: 200px;
+            touch-action: manipulation;
+            flex: 1 1 30%;
+            max-width: 180px;
             min-width: 100px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
             transition: transform 0.1s, background 0.2s;
@@ -114,8 +147,8 @@
             top: 0;
             right: 0;
             bottom: 0;
-            width: 85%; /* Mobile friendly width */
-            max-width: 300px;
+            width: 85%;
+            max-width: 320px;
             background: var(--panel-bg);
             z-index: 100;
             transform: translateX(100%);
@@ -124,6 +157,7 @@
             flex-direction: column;
             border-left: 1px solid #333;
             box-shadow: -10px 0 20px rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
         }
 
         #exercise-sidebar.active {
@@ -131,11 +165,12 @@
         }
 
         .sidebar-header {
-            padding: 20px;
+            padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid #333;
+            background: rgba(0,0,0,0.3);
         }
 
         .sidebar-content {
@@ -148,30 +183,31 @@
         .close-btn {
             background: transparent;
             color: #fff;
-            font-size: 1.5rem;
-            padding: 5px;
+            font-size: 1.8rem;
+            line-height: 1;
+            padding: 0 10px;
             min-width: auto;
             box-shadow: none;
+            flex: 0;
         }
 
         #exercise-sidebar h3 {
             color: var(--primary-color);
-            margin-top: 20px;
+            margin-top: 25px;
             margin-bottom: 10px;
             border-bottom: 1px solid #444;
             padding-bottom: 5px;
+            font-size: 1.1rem;
         }
+        
+        #exercise-sidebar h3:first-child { margin-top: 0; }
 
-        #exercise-sidebar ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
+        #exercise-sidebar ul { list-style: none; padding: 0; margin: 0; }
         #exercise-sidebar li {
-            padding: 12px 0;
+            padding: 12px 5px;
             border-bottom: 1px solid #333;
-            color: #ccc;
+            color: #ddd;
+            font-size: 1rem;
         }
 
         /* --- Menu Toggle Button --- */
@@ -180,17 +216,16 @@
             top: 15px;
             right: 15px;
             z-index: 50;
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(30, 30, 30, 0.8);
             color: white;
             border: 1px solid #555;
-            padding: 8px 12px;
+            padding: 8px 16px;
             font-size: 0.9rem;
             border-radius: 8px;
             flex: none;
             width: auto;
             min-width: auto;
         }
-
     </style>
     
     <!-- TensorFlow.js Dependencies -->
@@ -209,6 +244,9 @@
     <div id="canvas-wrapper">
         <video id="video" playsinline></video>
         <canvas id="output"></canvas>
+        
+        <!-- NEW: Hint Overlay (e.g., "Too Close!") -->
+        <div id="guidance-overlay">Too Close! Move Back</div>
     </div>
 
     <!-- Menu Toggle -->
@@ -223,7 +261,7 @@
     <!-- Sidebar -->
     <div id="exercise-sidebar">
         <div class="sidebar-header">
-            <h2 style="margin:0">Library</h2>
+            <h2 style="margin:0; font-size: 1.3rem;">Library</h2>
             <button class="close-btn" onclick="toggleSidebar()">×</button>
         </div>
         <div class="sidebar-content">
@@ -269,10 +307,8 @@
     <!-- --- PATCH: Text Mirror Fix --- -->
     <script>
         /**
-         * This script intercepts canvas text drawing. 
-         * Because the canvas is flipped via CSS (to mirror the webcam), 
-         * standard text appears backwards. This patch draws the text 
-         * "backwards" in JS so that the CSS flip renders it correctly.
+         * Logic: Because the video is mirrored (scaleX(-1)), we mirror the canvas context text 
+         * drawing operations internally so the text appears readable to the user.
          */
         (function() {
             const originalFillText = CanvasRenderingContext2D.prototype.fillText;
@@ -281,7 +317,7 @@
             CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
                 this.save();
                 this.translate(x, y);
-                this.scale(-1, 1); // Flip context horizontally
+                this.scale(-1, 1);
                 originalFillText.call(this, text, 0, 0, maxWidth);
                 this.restore();
             };
@@ -289,7 +325,7 @@
             CanvasRenderingContext2D.prototype.strokeText = function(text, x, y, maxWidth) {
                 this.save();
                 this.translate(x, y);
-                this.scale(-1, 1); // Flip context horizontally
+                this.scale(-1, 1);
                 originalStrokeText.call(this, text, 0, 0, maxWidth);
                 this.restore();
             };
@@ -300,23 +336,40 @@
     <script src="Exercise.js"></script>
     <script src="Script.js"></script>
 
-    <!-- UI Logic -->
+    <!-- UI Logic & Global Helper Functions -->
     <script>
         function toggleSidebar() {
             document.getElementById('exercise-sidebar').classList.toggle('active');
         }
 
-        // Bridge functions for stability
+        /**
+         * Global function to update the hint message.
+         * Call this from your Script.js logic when the user is too close.
+         * Usage: updateHint("Too Close!") or updateHint(null) to hide.
+         */
+        window.updateHint = function(message) {
+            const el = document.getElementById('guidance-overlay');
+            if (message) {
+                el.innerText = message;
+                el.classList.add('active');
+            } else {
+                el.classList.remove('active');
+            }
+        };
+
+        // UI Bridge Functions (Fallbacks)
         if (typeof startRoutine === 'undefined') {
             window.startRoutine = function(mode) {
                 console.log("Routine started: " + mode);
-                document.getElementById('status-display').innerText = mode.toUpperCase();
+                const status = document.getElementById('status-display');
+                if(status) status.innerText = mode.toUpperCase();
             };
         }
         if (typeof startMode === 'undefined') {
             window.startMode = function(mode) {
                 console.log("Mode started: " + mode);
-                document.getElementById('status-display').innerText = "FREE WORKOUT";
+                const status = document.getElementById('status-display');
+                if(status) status.innerText = "FREE WORKOUT";
             };
         }
     </script>
