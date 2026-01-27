@@ -2,162 +2,204 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Magic Mirror - Your Personal Fitness Coach</title>
     <style>
+        /* --- Modern CSS Variables --- */
         :root {
-            --primary-color: #00d2ff;
-            --warning-color: #ff4757;
-            --bg-color: #000000;
-            --panel-bg: rgba(20, 20, 20, 0.95);
-            --text-color: #ffffff;
+            /* Hilton Sans / Modern Stack */
+            --font-stack: "Hilton Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            
+            /* Theme Colors */
+            --primary-color: #2979FF; /* Electric Blue */
+            --primary-hover: #5390ff;
+            --warning-color: #FF1744; /* Vivid Red */
+            --bg-color: #0F1115; /* Deep Onyx */
+            
+            /* Glassmorphism Variables */
+            --surface-glass: rgba(25, 29, 35, 0.85);
+            --surface-border: rgba(255, 255, 255, 0.1);
+            
+            /* Text & Spacing */
+            --text-main: #FFFFFF;
+            --text-muted: #9E9E9E;
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --radius-sm: 12px;
         }
 
         body {
             margin: 0;
             padding: 0;
             background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            height: 100dvh;
+            color: var(--text-main);
+            font-family: var(--font-stack);
+            height: 100dvh; /* Dynamic viewport height */
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* --- Header --- */
+        /* --- Minimal Header --- */
         header {
             flex: 0 0 auto;
-            text-align: center;
-            padding: 8px;
-            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            background: transparent;
             z-index: 20;
+        }
+
+        .brand {
+            display: flex;
+            flex-direction: column;
         }
 
         h1 {
             margin: 0;
-            font-size: 1.1rem;
-            letter-spacing: 1px;
-            opacity: 0.9;
+            font-size: 1.25rem; /* Slightly larger for the new name */
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(90deg, #fff, #aebacf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         #status-display {
-            font-size: 0.9rem;
+            font-size: 0.75rem;
             color: var(--primary-color);
-            margin-top: 2px;
             font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 4px;
         }
 
-        /* --- Main Video Area --- */
+        /* --- Immersive Video Area --- */
         #canvas-wrapper {
             flex: 1;
             position: relative;
             width: 100%;
+            margin: 0 auto;
             display: flex;
             justify-content: center;
             align-items: center;
             overflow: hidden;
-            background: #111;
+            background: #000;
+        }
+        
+        @media (min-width: 768px) {
+            #canvas-wrapper {
+                width: 95%;
+                border-radius: var(--radius-lg);
+                margin-bottom: 20px;
+                border: 1px solid var(--surface-border);
+            }
         }
 
-        /* Video and Canvas */
         #video, #output {
             position: absolute;
             width: 100%;
             height: 100%;
-            object-fit: contain; 
-            transform: scaleX(-1); /* Mirror the video */
+            object-fit: contain;
+            transform: scaleX(-1); /* Mirror Effect */
         }
 
         #output {
             z-index: 10;
         }
 
-        /* --- NEW: Guidance/Hint Overlay --- */
+        /* --- Sleek Hint Notification --- */
         #guidance-overlay {
             position: absolute;
-            top: 15%;
+            top: 20%;
             left: 50%;
             transform: translate(-50%, 0);
-            background: rgba(255, 71, 87, 0.9); /* Red warning color */
+            background: rgba(255, 23, 68, 0.9);
+            backdrop-filter: blur(8px);
             color: white;
-            padding: 12px 24px;
+            padding: 12px 28px;
             border-radius: 50px;
-            font-size: 1.2rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            box-shadow: 0 10px 40px rgba(255, 23, 68, 0.3);
             z-index: 50;
-            opacity: 0; /* Hidden by default */
-            transition: opacity 0.3s ease;
-            pointer-events: none; /* Let clicks pass through */
-            text-align: center;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
             white-space: nowrap;
         }
 
         #guidance-overlay.active {
             opacity: 1;
-            animation: pulse-warning 1.5s infinite;
+            transform: translate(-50%, 10px);
         }
 
-        @keyframes pulse-warning {
-            0% { transform: translate(-50%, 0) scale(1); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); }
-            70% { transform: translate(-50%, 0) scale(1.05); box-shadow: 0 0 0 10px rgba(255, 71, 87, 0); }
-            100% { transform: translate(-50%, 0) scale(1); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
-        }
-
-        /* --- Controls --- */
+        /* --- Floating Control Bar --- */
         #controls {
             flex: 0 0 auto;
-            padding: 15px;
-            background: rgba(0, 0, 0, 0.85);
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
+            padding: 20px 24px 30px; /* Extra padding bottom for iPhone home bar */
+            background: linear-gradient(to top, rgba(0,0,0,0.95), transparent);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
             z-index: 30;
-            border-top: 1px solid #333;
+            max-width: 600px;
+            width: 100%;
+            align-self: center;
+            box-sizing: border-box;
         }
 
         button {
-            background-color: var(--primary-color);
-            color: #000;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 25px;
-            font-size: 0.95rem;
-            font-weight: bold;
+            background: var(--surface-glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--surface-border);
+            color: var(--text-main);
+            padding: 16px 0;
+            border-radius: var(--radius-md);
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: var(--font-stack);
             cursor: pointer;
-            touch-action: manipulation;
-            flex: 1 1 30%;
-            max-width: 180px;
-            min-width: 100px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            transition: transform 0.1s, background 0.2s;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
         }
 
         button:active {
             transform: scale(0.96);
-            background-color: #00a5c9;
+        }
+        
+        button.primary-action {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(41, 121, 255, 0.3);
         }
 
-        /* --- Sidebar (Exercise List) --- */
+        /* --- Modern Sidebar --- */
         #exercise-sidebar {
             position: absolute;
             top: 0;
             right: 0;
             bottom: 0;
-            width: 85%;
-            max-width: 320px;
-            background: var(--panel-bg);
+            width: 100%;
+            max-width: 360px;
+            background: rgba(15, 17, 21, 0.98);
+            backdrop-filter: blur(16px);
             z-index: 100;
             transform: translateX(100%);
-            transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
             display: flex;
             flex-direction: column;
-            border-left: 1px solid #333;
-            box-shadow: -10px 0 20px rgba(0,0,0,0.5);
-            backdrop-filter: blur(10px);
+            box-shadow: -20px 0 50px rgba(0,0,0,0.5);
         }
 
         #exercise-sidebar.active {
@@ -165,67 +207,92 @@
         }
 
         .sidebar-header {
-            padding: 15px 20px;
+            padding: 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #333;
-            background: rgba(0,0,0,0.3);
+            border-bottom: 1px solid var(--surface-border);
         }
-
-        .sidebar-content {
-            overflow-y: auto;
-            flex: 1;
-            padding: 20px;
-            -webkit-overflow-scrolling: touch;
+        
+        .sidebar-header h2 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 700;
         }
 
         .close-btn {
             background: transparent;
-            color: #fff;
-            font-size: 1.8rem;
-            line-height: 1;
-            padding: 0 10px;
-            min-width: auto;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            padding: 8px;
+            width: auto;
             box-shadow: none;
-            flex: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .close-btn:hover { color: white; }
+
+        .sidebar-content {
+            overflow-y: auto;
+            flex: 1;
+            padding: 24px;
         }
 
-        #exercise-sidebar h3 {
+        .category-group {
+            margin-bottom: 32px;
+        }
+
+        h3 {
             color: var(--primary-color);
-            margin-top: 25px;
-            margin-bottom: 10px;
-            border-bottom: 1px solid #444;
-            padding-bottom: 5px;
-            font-size: 1.1rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 16px;
+            font-weight: 700;
+            opacity: 0.9;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        li {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: var(--radius-sm);
+            color: var(--text-main);
+            font-size: 0.9rem;
+            text-align: center;
+            transition: background 0.2s;
         }
         
-        #exercise-sidebar h3:first-child { margin-top: 0; }
-
-        #exercise-sidebar ul { list-style: none; padding: 0; margin: 0; }
-        #exercise-sidebar li {
-            padding: 12px 5px;
-            border-bottom: 1px solid #333;
-            color: #ddd;
-            font-size: 1rem;
+        li:hover {
+            background: rgba(255, 255, 255, 0.1);
         }
 
-        /* --- Menu Toggle Button --- */
+        /* --- Menu Toggle Pill --- */
         #menu-toggle {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            z-index: 50;
-            background: rgba(30, 30, 30, 0.8);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--surface-border);
             color: white;
-            border: 1px solid #555;
             padding: 8px 16px;
-            font-size: 0.9rem;
-            border-radius: 8px;
-            flex: none;
+            font-size: 0.85rem;
+            border-radius: 20px;
+            font-weight: 500;
             width: auto;
-            min-width: auto;
+            box-shadow: none;
+            margin: 0;
         }
+
     </style>
     
     <!-- TensorFlow.js Dependencies -->
@@ -237,79 +304,83 @@
 <body>
 
     <header>
-        <h1>Smart Fitness Coach</h1>
-        <div id="status-display">Initializing...</div>
+        <div class="brand">
+            <h1>Magic Mirror</h1>
+            <div id="status-display">Personal Fitness Coach</div>
+        </div>
+        <button id="menu-toggle" onclick="toggleSidebar()">Library</button>
     </header>
 
     <div id="canvas-wrapper">
         <video id="video" playsinline></video>
         <canvas id="output"></canvas>
         
-        <!-- NEW: Hint Overlay (e.g., "Too Close!") -->
+        <!-- Hint Overlay -->
         <div id="guidance-overlay">Too Close! Move Back</div>
     </div>
-
-    <!-- Menu Toggle -->
-    <button id="menu-toggle" onclick="toggleSidebar()">Exercises</button>
 
     <div id="controls">
         <button onclick="startRoutine('warmup')">Warm Up</button>
         <button onclick="startRoutine('stretch')">Stretching</button>
-        <button onclick="startMode('free')">Free Workout</button>
+        <button class="primary-action" onclick="startMode('free')">Free Workout</button>
     </div>
 
     <!-- Sidebar -->
     <div id="exercise-sidebar">
         <div class="sidebar-header">
-            <h2 style="margin:0; font-size: 1.3rem;">Library</h2>
-            <button class="close-btn" onclick="toggleSidebar()">×</button>
+            <h2>Exercises</h2>
+            <button class="close-btn" onclick="toggleSidebar()">✕</button>
         </div>
         <div class="sidebar-content">
-            <h3>Strength</h3>
-            <ul>
-                <li>Squat</li>
-                <li>Push-up</li>
-                <li>Lunge</li>
-                <li>Dip</li>
-                <li>Sit-up</li>
-                <li>Leg Raise</li>
-                <li>Donkey Kick</li>
-                <li>Calf Raise</li>
-            </ul>
+            <div class="category-group">
+                <h3>Strength</h3>
+                <ul>
+                    <li>Squat</li>
+                    <li>Push-up</li>
+                    <li>Lunge</li>
+                    <li>Dip</li>
+                    <li>Sit-up</li>
+                    <li>Leg Raise</li>
+                    <li>Donkey Kick</li>
+                    <li>Calf Raise</li>
+                </ul>
+            </div>
 
-            <h3>Cardio</h3>
-            <ul>
-                <li>Jumping Jack</li>
-                <li>High Knees</li>
-                <li>Butt Kicks</li>
-                <li>Squat Jump</li>
-                <li>Box Jump</li>
-                <li>Mountain Climber</li>
-                <li>Burpee</li>
-            </ul>
+            <div class="category-group">
+                <h3>Cardio</h3>
+                <ul>
+                    <li>Jumping Jack</li>
+                    <li>High Knees</li>
+                    <li>Butt Kicks</li>
+                    <li>Squat Jump</li>
+                    <li>Box Jump</li>
+                    <li>Mountain Climber</li>
+                    <li>Burpee</li>
+                </ul>
+            </div>
 
-            <h3>Static / Core</h3>
-            <ul>
-                <li>Plank</li>
-                <li>Side Plank</li>
-                <li>Wall Sit</li>
-                <li>Glute Bridge</li>
-            </ul>
+            <div class="category-group">
+                <h3>Core & Static</h3>
+                <ul>
+                    <li>Plank</li>
+                    <li>Side Plank</li>
+                    <li>Wall Sit</li>
+                    <li>Glute Bridge</li>
+                </ul>
+            </div>
 
-            <h3>Flexibility</h3>
-            <ul>
-                <li>Side Stretch</li>
-                <li>Forward Fold</li>
-            </ul>
+            <div class="category-group">
+                <h3>Flexibility</h3>
+                <ul>
+                    <li>Side Stretch</li>
+                    <li>Forward Fold</li>
+                </ul>
+            </div>
         </div>
     </div>
 
-    <!-- --- PATCH: Text Mirror Fix --- -->
+    <!-- --- Text Mirror Fix --- -->
     <script>
-        /**
-         * Logic: Because the video is mirrored (scaleX(-1)), we mirror the canvas context text 
-         * drawing operations internally so the text appears readable to the user.
-         */
         (function() {
             const originalFillText = CanvasRenderingContext2D.prototype.fillText;
             const originalStrokeText = CanvasRenderingContext2D.prototype.strokeText;
@@ -332,21 +403,16 @@
         })();
     </script>
 
-    <!-- Project Scripts -->
+    <!-- Scripts -->
     <script src="Exercise.js"></script>
     <script src="Script.js"></script>
 
-    <!-- UI Logic & Global Helper Functions -->
+    <!-- Logic -->
     <script>
         function toggleSidebar() {
             document.getElementById('exercise-sidebar').classList.toggle('active');
         }
 
-        /**
-         * Global function to update the hint message.
-         * Call this from your Script.js logic when the user is too close.
-         * Usage: updateHint("Too Close!") or updateHint(null) to hide.
-         */
         window.updateHint = function(message) {
             const el = document.getElementById('guidance-overlay');
             if (message) {
@@ -357,19 +423,16 @@
             }
         };
 
-        // UI Bridge Functions (Fallbacks)
         if (typeof startRoutine === 'undefined') {
             window.startRoutine = function(mode) {
-                console.log("Routine started: " + mode);
-                const status = document.getElementById('status-display');
-                if(status) status.innerText = mode.toUpperCase();
+                console.log("Routine: " + mode);
+                document.getElementById('status-display').innerText = mode.toUpperCase();
             };
         }
         if (typeof startMode === 'undefined') {
             window.startMode = function(mode) {
-                console.log("Mode started: " + mode);
-                const status = document.getElementById('status-display');
-                if(status) status.innerText = "FREE WORKOUT";
+                console.log("Mode: " + mode);
+                document.getElementById('status-display').innerText = "FREE WORKOUT";
             };
         }
     </script>
