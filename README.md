@@ -1,122 +1,176 @@
-# AI Smart Fitness Coach
+# Magic Mirror - AI Fitness Coach / AI 智能健身私教
 
-## Project Information
-
-### Project Overview
-This project is a web-based artificial intelligence fitness coach that utilizes computer vision to track human body movements in real-time. By leveraging the user's webcam, the application detects body keypoints to count exercise repetitions, monitor posture form, and provide immediate feedback. All processing is done locally within the browser using WebGL, ensuring user privacy and low latency without sending data to external servers.
-
-The system supports over 20 different exercises, ranging from strength training to cardio, and features an automated routine system for warm-ups and stretching.
-
-### Key Features
-*   **Real-time Pose Detection:** Tracks 17 body keypoints with high accuracy using TensorFlow.js.
-*   **Repetition Counting:** Automates counting based on geometric angle calculation (e.g., knee angles for squats).
-*   **Form Correction:** Provides text feedback (e.g., "Go lower," "Straighten back") based on biomechanical thresholds.
-*   **Routine System:** Integrated logic for timed Warm-Up and Stretching sessions that automatically cycle through exercises.
-*   **Performance Optimized:** Implements frame throttling for AI inference (10 FPS) while maintaining smooth UI rendering (60 FPS) to support lower-end devices.
-
-### AI Model Used
-This project relies on **TensorFlow.js** and the **MoveNet (SinglePose Lightning)** architecture.
-
-*   **Architecture:** MoveNet is a bottom-up estimation model designed to run efficiently on consumer hardware, including laptops and mobile phones.
-*   **Variant:** We utilize the "Lightning" variant. This version is optimized for high inference speed, making it ideal for fitness applications where tracking rapid movements is more critical than pixel-perfect precision.
-*   **Mechanism:** The model analyzes the video feed frame-by-frame and outputs X/Y coordinates along with confidence scores for 17 keypoints (ankles, knees, hips, shoulders, elbows, wrists, etc.).
-
-### Code Structure
-The project is built with vanilla JavaScript to ensure easy deployment with no build steps required.
-
-1.  **`index.html`**
-    *   The entry point of the application.
-    *   Contains the HTML5 Video element for the webcam feed.
-    *   Contains the Canvas element for drawing the skeleton overlay.
-    *   Includes the UI controls for mode selection (Warm Up / Stretch / Free Workout).
-
-2.  **`script.js`**
-    *   **Configuration:** Manages settings for video resolution and AI throttle rates.
-    *   **Math Utilities:** Helper functions to calculate geometric angles, Euclidean distances, and vector mathematics.
-    *   **Exercise Classes:** Defines the logic for 22 distinct exercises. Each class acts as a state machine (e.g., transitioning from "Standing" to "Squatting") to track repetitions and generate feedback.
-    *   **Routine Manager:** Handles timed sequences for warm-ups and stretches.
-    *   **Render Loop:** Separates the AI inference loop from the graphics rendering loop to ensure a smooth user experience.
-
-3.  **`style.css`**
-    *   Defines the visual appearance, utilizing a dark theme suitable for fitness environments.
-
-### Supported Exercises
-*   **Strength:** Squat, Push-up, Lunge, Dip, Sit-up, Leg Raise, Donkey Kick, Calf Raise.
-*   **Cardio:** Jumping Jack, High Knees, Butt Kicks, Squat Jump, Box Jump, Mountain Climber, Burpee.
-*   **Static/Core:** Plank, Side Plank, Wall Sit, Glute Bridge.
-*   **Flexibility:** Side Stretch, Forward Fold.
-
-### How to Run
-1.  Clone or download the repository.
-2.  Navigate to the project folder.
-3.  Serve the files using a local web server (Browser security policies restrict webcam access when opening HTML files directly).
-    *   **Using Python:** `python -m http.server 8000`
-    *   **Using VS Code:** Install "Live Server" extension and click "Go Live".
-4.  Open your browser to `localhost:8000`.
-5.  Allow camera access when prompted.
+[English](#english) | [中文 (Chinese)](#中文-chinese)
 
 ---
 
-## 项目信息
+<a name="english"></a>
+## 🇬🇧 English
 
-### 项目简介
-本项目是一个基于Web的AI智能健身助手，利用计算机视觉技术实时追踪人体动作。应用程序通过用户的网络摄像头检测身体关键点，从而计算运动次数、监测姿态标准度并提供即时反馈。所有数据处理均通过WebGL在浏览器本地完成，无需将视频数据上传至服务器，从而确保了用户隐私和低延迟体验。
+**Magic Mirror** is a browser-based personal fitness assistant that uses computer vision (AI) to track your workouts in real-time. Designed to act like a smart mirror, it reflects your image while overlaying pose skeletons, counting repetitions, and providing instant feedback on your form.
 
-该系统支持深蹲、俯卧撑、有氧运动等20多种动作，并包含自动化的热身和拉伸流程。
+Built with **TensorFlow.js**, all AI processing happens locally on your device (Client-side), ensuring complete privacy and low latency.
 
-### 主要功能
-*   **实时姿态检测：** 使用TensorFlow.js高精度追踪人体17个关键点。
-*   **自动计数：** 基于几何角度计算（如深蹲时的膝盖角度）实现自动计数。
-*   **姿态矫正：** 根据生物力学阈值提供实时文本反馈（如“再低一点”、“背部挺直”）。
-*   **流程管理系统：** 内置计时逻辑，支持热身和拉伸课程，可自动切换动作。
-*   **性能优化：** 实现了AI推理帧率限制（10 FPS）与UI渲染（60 FPS）的分离，确保在低配置设备上也能流畅运行。
+### 🚀 Key Features
 
-### 使用的AI模型
-本项目采用了 **TensorFlow.js** 和 **MoveNet (SinglePose Lightning)** 架构。
+*   **Real-time Pose Detection:** Powered by the MoveNet SinglePose Lightning model to track 17 body keypoints with high speed and accuracy.
+*   **"Magic Mirror" Interface:**
+    *   **Immersive View:** Full-screen, mirrored video feed for a natural workout experience.
+    *   **Modern Design:** Sleek "Glassmorphism" UI with translucent panels and smooth animations.
+    *   **Smart Feedback:** Visual indicators for AI status (Ready/Loading) and proximity warnings (e.g., "Too Close!").
+*   **Intelligent Tracking:**
+    *   **Auto Rep Counting:** Automatically detects exercise states (e.g., squat depth) to count repetitions.
+    *   **Form Correction:** Provides real-time guidance (e.g., "Keep back straight", "Go lower").
+*   **Exercise Library:** Built-in support for Strength, Cardio, and Flexibility routines (Squats, Push-ups, Jumping Jacks, Planks, etc.).
+*   **Privacy First:** No video data is ever sent to the cloud. Everything runs in your browser.
 
-*   **架构：** MoveNet 是一种自下而上的姿态估计算法，专为在笔记本电脑和手机等消费级硬件上高效运行而设计。
-*   **变体：** 我们使用了 "Lightning"（闪电）版本。该版本针对推理速度进行了优化，非常适合需要捕捉快速动作的健身应用场景。
-*   **原理：** 模型逐帧分析视频流，并输出17个关键点（脚踝、膝盖、臀部、肩膀、手肘、手腕等）的X/Y坐标及置信度分数。
+### 🛠️ Technology Stack
 
-### 代码结构
-本项目使用原生JavaScript构建，无需复杂的构建步骤即可部署。
+*   **Frontend:** HTML5, CSS3 (Responsive, Flexbox/Grid), Vanilla JavaScript.
+*   **AI Engine:** TensorFlow.js (MoveNet).
+*   **Hardware:** Standard Webcam (Laptop or USB).
 
-1.  **`index.html`**
-    *   应用程序入口。
-    *   包含用于显示摄像头的HTML5 Video元素。
-    *   包含用于绘制骨架覆盖层的Canvas元素。
-    *   包含用于选择模式（热身/拉伸/自由训练）的UI控件。
+### 📂 Project Structure
 
-2.  **`script.js`**
-    *   **配置 (Configuration)：** 管理视频分辨率和AI推理频率设置。
-    *   **数学工具 (Math Utilities)：** 用于计算几何角度、欧几里得距离和向量运算的辅助函数。
-    *   **动作类 (Exercise Classes)：** 定义了22种不同动作的逻辑。每个类作为一个状态机（例如从“站立”状态转换到“下蹲”状态），负责追踪重复次数并生成反馈。
-    *   **流程管理器 (Routine Manager)：** 处理热身和拉伸的计时序列。
-    *   **渲染循环 (Render Loop)：** 将AI推理循环与图形渲染循环分离，确保流畅的用户体验。
+*   **`index.html`**  
+    The main entry point. Contains the responsive layout, video/canvas elements, and the UI logic for the "Magic Mirror" interface.
+    
+*   **`Script.js`**  
+    The core application logic. It handles:
+    *   Webcam initialization and permissions.
+    *   Loading the TensorFlow.js model.
+    *   The main detection loop (pose estimation).
+    *   Drawing the skeleton overlay.
+    
+*   **`Exercise.js`**  
+    Contains the logic for specific exercises. It defines the biomechanical rules (angles, distances) for counting reps and detecting bad form.
 
-3.  **`style.css`**
-    *   定义视觉样式，采用适合健身环境的深色主题。
+### 📦 How to Run
 
-### 支持的动作
-*   **力量训练：** 深蹲 (Squat)、俯卧撑 (Push-up)、弓步蹲 (Lunge)、臂屈伸 (Dip)、仰卧起坐 (Sit-up)、腿举 (Leg Raise)、跪姿后踢 (Donkey Kick)、提踵 (Calf Raise)。
-*   **有氧训练：** 开合跳 (Jumping Jack)、高抬腿 (High Knees)、后踢腿 (Butt Kicks)、深蹲跳 (Squat Jump)、跳箱 (Box Jump)、登山跑 (Mountain Climber)、波比跳 (Burpee)。
-*   **静态/核心：** 平板支撑 (Plank)、侧平板支撑 (Side Plank)、靠墙静蹲 (Wall Sit)、臀桥 (Glute Bridge)。
-*   **柔韧性：** 侧向拉伸 (Side Stretch)、体前屈 (Forward Fold)。
+Because this project requires access to the webcam and loads external AI models, modern browsers require it to be served over **HTTPS** or **localhost**. You cannot simply double-click the `index.html` file.
 
-### 如何运行
-1.  克隆或下载本代码仓库。
-2.  进入项目文件夹。
-3.  使用本地Web服务器运行文件（由于浏览器安全策略，直接打开HTML文件无法调用摄像头）。
-    *   **使用 Python:** 在终端运行 `python -m http.server 8000`
-    *   **使用 VS Code:** 安装 "Live Server" 插件并点击 "Go Live"。
-4.  在浏览器中打开 `localhost:8000`。
-5.  在提示时允许浏览器访问摄像头。
+#### Method 1: VS Code (Recommended)
+1.  Open the project folder in **Visual Studio Code**.
+2.  Install the **Live Server** extension.
+3.  Right-click `index.html` and select **"Open with Live Server"**.
+
+#### Method 2: Python
+If you have Python installed, run a simple HTTP server from the terminal:
+
+```bash
+# Python 3
+python -m http.server 8000
+```
+Then open your browser to `http://localhost:8000`.
+
+#### Method 3: Node.js
+If you have Node.js installed:
+
+```bash
+npx http-server .
+```
+
+### 📱 Mobile Support
+The interface is fully optimized for mobile devices:
+*   **Responsive:** Layout adjusts automatically for Portrait and Landscape modes.
+*   **Controls:** Touch-friendly buttons and floating menus.
+*   **Note:** Please allow camera permissions when prompted by your mobile browser (Safari on iOS / Chrome on Android).
+
+### ⚠️ Troubleshooting
+
+1.  **AI Status Indicator stays Yellow:**  
+    The model is downloading. Check your internet connection. If it persists, check the browser console (F12) for network errors.
+    
+2.  **"Too Close" Warning persists:**  
+    Step back until your full body (head to toes) is visible in the frame. The AI needs to see your ankles and shoulders to accurately track exercises like Squats.
+
+3.  **Video is black:**  
+    Ensure you have granted camera permissions. Check if another application (Zoom, Teams) is currently using the camera.
 
 ---
 
-## References (参考资料)
+<a name="中文-chinese"></a>
+## 🇨🇳 中文 (Chinese)
 
-*   **TensorFlow.js:** https://www.tensorflow.org/js
-*   **MoveNet Model Documentation:** https://github.com/tensorflow/tfjs-models/tree/master/pose-detection/src/movenet
-*   **Pose Detection API:** https://github.com/tensorflow/tfjs-models/tree/master/pose-detection
-*   *Coding implimentation of the project is assisted by Google Gemini and Qwen*
+**Magic Mirror (魔镜)** 是一款基于浏览器的 AI 个人健身助手。它利用计算机视觉技术实时追踪您的锻炼动作。就像一面智能镜子，您可以在屏幕上看到自己，AI 会叠加骨骼关键点，自动计算重复次数，并对您的动作姿态提供即时反馈。
+
+本项目基于 **TensorFlow.js** 构建，所有 AI 计算均在您的设备本地（客户端）进行，确保了绝对的隐私安全和极低的延迟。
+
+### 🚀 主要功能
+
+*   **实时姿态检测：** 使用 MoveNet SinglePose Lightning 模型，快速且精准地追踪全身 17 个关键点。
+*   **"魔镜" 界面体验：**
+    *   **沉浸式视图：** 全屏镜像视频流，提供自然的跟练体验。
+    *   **现代 UI 设计：** 采用流行的 "毛玻璃 (Glassmorphism)" 风格，界面通透美观。
+    *   **智能反馈：** 包含 AI 状态指示灯（准备就绪/加载中）和距离提示（如“太近了！”）。
+*   **智能追踪：**
+    *   **自动计数：** 自动识别动作状态（如深蹲幅度的起落）并计算次数。
+    *   **动作纠正：** 提供实时指导（例如：“背部挺直”、“下蹲再深一点”）。
+*   **动作库：** 内置力量、有氧和柔韧性训练（深蹲、俯卧撑、开合跳、平板支撑等）。
+*   **隐私优先：** 视频数据完全不经过云端，所有处理均在浏览器中完成。
+
+### 🛠️ 技术栈
+
+*   **前端：** HTML5, CSS3 (响应式布局), 原生 JavaScript.
+*   **AI 引擎：** TensorFlow.js (MoveNet 模型).
+*   **硬件要求：** 标准网络摄像头 (笔记本自带或 USB 外接).
+
+### 📂 项目结构
+
+*   **`index.html`**  
+    主入口文件。包含响应式布局、视频/画布元素以及界面的交互逻辑。
+    
+*   **`Script.js`**  
+    核心逻辑文件。负责：
+    *   初始化摄像头并获取权限。
+    *   加载 TensorFlow.js 模型。
+    *   主检测循环（逐帧姿态估计）。
+    *   在画布上绘制骨骼连线。
+    
+*   **`Exercise.js`**  
+    具体动作的逻辑文件。定义了各个动作（如深蹲）的判断规则（角度、距离），用于计数和纠错。
+
+### 📦 如何运行
+
+由于项目需要访问摄像头并加载 AI 模型，现代浏览器要求必须通过 **HTTPS** 或 **localhost** 协议运行。您不能直接双击打开 `index.html` 文件。
+
+#### 方法 1: VS Code (推荐)
+1.  在 **Visual Studio Code** 中打开项目文件夹。
+2.  安装 **Live Server** 扩展插件。
+3.  右键点击 `index.html` 并选择 **"Open with Live Server"**。
+
+#### 方法 2: Python
+如果您安装了 Python，可以在终端运行简单的 HTTP 服务器：
+
+```bash
+# Python 3
+python -m http.server 8000
+```
+然后在浏览器访问 `http://localhost:8000`。
+
+#### 方法 3: Node.js
+如果您安装了 Node.js：
+
+```bash
+npx http-server .
+```
+
+### 📱 移动端支持
+界面已针对移动设备进行优化：
+*   **响应式：** 自动适配横屏和竖屏模式。
+*   **触控优化：** 按钮和菜单易于手指点击。
+*   **注意：** 请在手机浏览器（iOS Safari / Android Chrome）提示时允许使用摄像头权限。
+
+### ⚠️ 常见问题排查
+
+1.  **AI 状态指示灯一直是黄色：**  
+    模型正在下载中。请检查您的网络连接。如果长时间无变化，请按 F12 查看浏览器控制台是否有网络错误。
+    
+2.  **一直提示 "Too Close" (太近了)：**  
+    请向后退，直到您的全身（从头到脚）都出现在画面中。AI 需要看到您的脚踝和肩膀才能准确追踪深蹲等动作。
+
+3.  **视频黑屏：**  
+    请确保已授予浏览器摄像头权限。检查是否有其他应用（如 Zoom, Teams）正在占用摄像头。
+
+---
+[MIT License](LICENSE)
