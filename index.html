@@ -7,25 +7,17 @@
     <style>
         /* --- Modern CSS Variables --- */
         :root {
-            /* Hilton Sans / Modern Stack */
             --font-stack: "Hilton Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            
-            /* Theme Colors */
-            --primary-color: #2979FF; /* Electric Blue */
-            --primary-hover: #5390ff;
-            --warning-color: #FF1744; /* Vivid Red */
-            --bg-color: #0F1115; /* Deep Onyx */
-            
-            /* Glassmorphism Variables */
+            --primary-color: #2979FF;
+            --warning-color: #FF1744;
+            --success-color: #00E676;
+            --loading-color: #FFEA00;
+            --bg-color: #0F1115;
             --surface-glass: rgba(25, 29, 35, 0.85);
             --surface-border: rgba(255, 255, 255, 0.1);
-            
-            /* Text & Spacing */
             --text-main: #FFFFFF;
-            --text-muted: #9E9E9E;
             --radius-lg: 24px;
             --radius-md: 16px;
-            --radius-sm: 12px;
         }
 
         body {
@@ -34,20 +26,20 @@
             background-color: var(--bg-color);
             color: var(--text-main);
             font-family: var(--font-stack);
-            height: 100dvh; /* Dynamic viewport height */
+            height: 100dvh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
             -webkit-font-smoothing: antialiased;
         }
 
-        /* --- Minimal Header --- */
+        /* --- Header & Indicators --- */
         header {
             flex: 0 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 16px 24px;
+            padding: 12px 20px;
             background: transparent;
             z-index: 20;
         }
@@ -59,21 +51,72 @@
 
         h1 {
             margin: 0;
-            font-size: 1.25rem; /* Slightly larger for the new name */
+            font-size: 1.1rem;
             font-weight: 700;
-            letter-spacing: -0.02em;
             background: linear-gradient(90deg, #fff, #aebacf);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        #status-display {
+        #status-text {
             font-size: 0.75rem;
             color: var(--primary-color);
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-top: 4px;
+            margin-top: 2px;
+        }
+
+        /* --- Top Right Actions --- */
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* AI Status Indicator */
+        .ai-status-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid var(--surface-border);
+            backdrop-filter: blur(4px);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--loading-color); /* Default: Loading */
+            box-shadow: 0 0 8px var(--loading-color);
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+
+        /* Status Colors */
+        .status-red .status-dot { background-color: var(--warning-color); box-shadow: 0 0 8px var(--warning-color); }
+        .status-yellow .status-dot { background-color: var(--loading-color); box-shadow: 0 0 8px var(--loading-color); animation: pulse-yellow 1.5s infinite; }
+        .status-green .status-dot { background-color: var(--success-color); box-shadow: 0 0 8px var(--success-color); }
+
+        @keyframes pulse-yellow {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Menu Button */
+        #menu-toggle {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--surface-border);
+            color: white;
+            padding: 8px 14px;
+            font-size: 0.8rem;
+            border-radius: 20px;
+            font-weight: 500;
+            cursor: pointer;
         }
 
         /* --- Immersive Video Area --- */
@@ -81,12 +124,12 @@
             flex: 1;
             position: relative;
             width: 100%;
-            margin: 0 auto;
+            /* FIX 1: Object fit cover ensures canvas and video align perfectly without letterboxing offsets */
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
             background: #000;
+            overflow: hidden;
         }
         
         @media (min-width: 768px) {
@@ -102,45 +145,48 @@
             position: absolute;
             width: 100%;
             height: 100%;
-            object-fit: contain;
-            transform: scaleX(-1); /* Mirror Effect */
+            /* FIX 1: 'cover' makes video fill the box. Both elements scale identically. */
+            object-fit: cover; 
+            /* FIX 1: Mirror BOTH elements so skeleton aligns with video */
+            transform: scaleX(-1); 
         }
 
         #output {
             z-index: 10;
         }
 
-        /* --- Sleek Hint Notification --- */
+        /* --- Hint Notification (Fixed Size) --- */
         #guidance-overlay {
             position: absolute;
-            top: 20%;
+            top: 20px; /* Position relative to canvas wrapper */
             left: 50%;
-            transform: translate(-50%, 0);
-            background: rgba(255, 23, 68, 0.9);
-            backdrop-filter: blur(8px);
+            transform: translate(-50%, -20px);
+            background: rgba(255, 23, 68, 0.95);
+            backdrop-filter: blur(4px);
             color: white;
-            padding: 12px 28px;
-            border-radius: 50px;
-            font-size: 1rem;
+            /* FIX 2: Smaller size and padding */
+            padding: 8px 16px; 
+            border-radius: 20px;
+            font-size: 0.85rem;
             font-weight: 600;
-            letter-spacing: 0.03em;
-            box-shadow: 0 10px 40px rgba(255, 23, 68, 0.3);
+            letter-spacing: 0.02em;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
             z-index: 50;
             opacity: 0;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             pointer-events: none;
             white-space: nowrap;
         }
 
         #guidance-overlay.active {
             opacity: 1;
-            transform: translate(-50%, 10px);
+            transform: translate(-50%, 0); /* Slide down effect */
         }
 
         /* --- Floating Control Bar --- */
         #controls {
             flex: 0 0 auto;
-            padding: 20px 24px 30px; /* Extra padding bottom for iPhone home bar */
+            padding: 20px 24px 30px;
             background: linear-gradient(to top, rgba(0,0,0,0.95), transparent);
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -155,143 +201,58 @@
         button {
             background: var(--surface-glass);
             backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
             border: 1px solid var(--surface-border);
             color: var(--text-main);
-            padding: 16px 0;
+            padding: 14px 0;
             border-radius: var(--radius-md);
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 600;
             font-family: var(--font-stack);
             cursor: pointer;
             transition: all 0.2s ease;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
-        button:hover {
-            background: rgba(255, 255, 255, 0.15);
-            transform: translateY(-2px);
-        }
-
-        button:active {
-            transform: scale(0.96);
-        }
+        button:active { transform: scale(0.96); }
         
         button.primary-action {
             background: var(--primary-color);
-            color: white;
             border: none;
             box-shadow: 0 4px 15px rgba(41, 121, 255, 0.3);
         }
 
-        /* --- Modern Sidebar --- */
+        /* --- Sidebar --- */
         #exercise-sidebar {
             position: absolute;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            width: 100%;
-            max-width: 360px;
+            top: 0; right: 0; bottom: 0;
+            width: 100%; max-width: 320px;
             background: rgba(15, 17, 21, 0.98);
             backdrop-filter: blur(16px);
             z-index: 100;
             transform: translateX(100%);
-            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.3s ease;
             display: flex;
             flex-direction: column;
-            box-shadow: -20px 0 50px rgba(0,0,0,0.5);
+            border-left: 1px solid var(--surface-border);
         }
 
-        #exercise-sidebar.active {
-            transform: translateX(0);
-        }
+        #exercise-sidebar.active { transform: translateX(0); }
 
         .sidebar-header {
-            padding: 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            padding: 20px;
+            display: flex; justify-content: space-between; align-items: center;
             border-bottom: 1px solid var(--surface-border);
         }
         
-        .sidebar-header h2 {
-            margin: 0;
-            font-size: 1.25rem;
-            font-weight: 700;
-        }
-
-        .close-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            font-size: 1.5rem;
-            padding: 8px;
-            width: auto;
-            box-shadow: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-        }
-        .close-btn:hover { color: white; }
-
-        .sidebar-content {
-            overflow-y: auto;
-            flex: 1;
-            padding: 24px;
-        }
-
-        .category-group {
-            margin-bottom: 32px;
-        }
-
-        h3 {
-            color: var(--primary-color);
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 16px;
-            font-weight: 700;
-            opacity: 0.9;
-        }
-
-        ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        li {
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: var(--radius-sm);
-            color: var(--text-main);
-            font-size: 0.9rem;
-            text-align: center;
-            transition: background 0.2s;
-        }
+        .sidebar-header h2 { margin: 0; font-size: 1.1rem; }
+        .close-btn { background: transparent; border: none; font-size: 1.5rem; padding: 5px; color: #aaa; }
         
-        li:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
+        .sidebar-content { overflow-y: auto; flex: 1; padding: 20px; }
+        
+        h3 { color: var(--primary-color); font-size: 0.75rem; text-transform: uppercase; margin: 20px 0 10px; opacity: 0.8; }
+        h3:first-child { margin-top: 0; }
 
-        /* --- Menu Toggle Pill --- */
-        #menu-toggle {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(8px);
-            border: 1px solid var(--surface-border);
-            color: white;
-            padding: 8px 16px;
-            font-size: 0.85rem;
-            border-radius: 20px;
-            font-weight: 500;
-            width: auto;
-            box-shadow: none;
-            margin: 0;
-        }
+        ul { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        li { padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; font-size: 0.85rem; text-align: center; }
 
     </style>
     
@@ -306,23 +267,33 @@
     <header>
         <div class="brand">
             <h1>Magic Mirror</h1>
-            <div id="status-display">Personal Fitness Coach</div>
+            <div id="status-text">Ready</div>
         </div>
-        <button id="menu-toggle" onclick="toggleSidebar()">Library</button>
+        
+        <div class="header-actions">
+            <!-- FIX 3: AI Status Indicator -->
+            <div id="ai-pill" class="ai-status-pill status-yellow" title="Model Status">
+                <div class="status-dot"></div>
+                <span>AI</span>
+            </div>
+            
+            <button id="menu-toggle" onclick="toggleSidebar()">Library</button>
+        </div>
     </header>
 
     <div id="canvas-wrapper">
+        <!-- FIX 1: Both elements have 'object-fit: cover' and 'scaleX(-1)' -->
         <video id="video" playsinline></video>
         <canvas id="output"></canvas>
         
-        <!-- Hint Overlay -->
-        <div id="guidance-overlay">Too Close! Move Back</div>
+        <!-- FIX 2: Hint moved inside wrapper, smaller size -->
+        <div id="guidance-overlay">Too Close!</div>
     </div>
 
     <div id="controls">
         <button onclick="startRoutine('warmup')">Warm Up</button>
-        <button onclick="startRoutine('stretch')">Stretching</button>
-        <button class="primary-action" onclick="startMode('free')">Free Workout</button>
+        <button onclick="startRoutine('stretch')">Stretch</button>
+        <button class="primary-action" onclick="startMode('free')">Start</button>
     </div>
 
     <!-- Sidebar -->
@@ -332,54 +303,23 @@
             <button class="close-btn" onclick="toggleSidebar()">✕</button>
         </div>
         <div class="sidebar-content">
-            <div class="category-group">
-                <h3>Strength</h3>
-                <ul>
-                    <li>Squat</li>
-                    <li>Push-up</li>
-                    <li>Lunge</li>
-                    <li>Dip</li>
-                    <li>Sit-up</li>
-                    <li>Leg Raise</li>
-                    <li>Donkey Kick</li>
-                    <li>Calf Raise</li>
-                </ul>
-            </div>
-
-            <div class="category-group">
-                <h3>Cardio</h3>
-                <ul>
-                    <li>Jumping Jack</li>
-                    <li>High Knees</li>
-                    <li>Butt Kicks</li>
-                    <li>Squat Jump</li>
-                    <li>Box Jump</li>
-                    <li>Mountain Climber</li>
-                    <li>Burpee</li>
-                </ul>
-            </div>
-
-            <div class="category-group">
-                <h3>Core & Static</h3>
-                <ul>
-                    <li>Plank</li>
-                    <li>Side Plank</li>
-                    <li>Wall Sit</li>
-                    <li>Glute Bridge</li>
-                </ul>
-            </div>
-
-            <div class="category-group">
-                <h3>Flexibility</h3>
-                <ul>
-                    <li>Side Stretch</li>
-                    <li>Forward Fold</li>
-                </ul>
-            </div>
+            <h3>Strength</h3>
+            <ul>
+                <li>Squat</li><li>Push-up</li><li>Lunge</li><li>Dip</li>
+            </ul>
+            <h3>Cardio</h3>
+            <ul>
+                <li>Jumping Jack</li><li>High Knees</li><li>Burpee</li>
+            </ul>
+            <h3>Core</h3>
+            <ul>
+                <li>Plank</li><li>Wall Sit</li>
+            </ul>
         </div>
     </div>
 
-    <!-- --- Text Mirror Fix --- -->
+    <!-- --- PATCH: Text Mirror Fix --- -->
+    <!-- Ensures text is readable even though canvas is mirrored -->
     <script>
         (function() {
             const originalFillText = CanvasRenderingContext2D.prototype.fillText;
@@ -403,7 +343,6 @@
         })();
     </script>
 
-    <!-- Scripts -->
     <script src="Exercise.js"></script>
     <script src="Script.js"></script>
 
@@ -413,6 +352,9 @@
             document.getElementById('exercise-sidebar').classList.toggle('active');
         }
 
+        // --- API for Script.js ---
+
+        // 1. Update Hint
         window.updateHint = function(message) {
             const el = document.getElementById('guidance-overlay');
             if (message) {
@@ -423,18 +365,30 @@
             }
         };
 
-        if (typeof startRoutine === 'undefined') {
-            window.startRoutine = function(mode) {
-                console.log("Routine: " + mode);
-                document.getElementById('status-display').innerText = mode.toUpperCase();
-            };
-        }
-        if (typeof startMode === 'undefined') {
-            window.startMode = function(mode) {
-                console.log("Mode: " + mode);
-                document.getElementById('status-display').innerText = "FREE WORKOUT";
-            };
-        }
+        // 2. Update AI Status (Red/Yellow/Green)
+        // Call window.setAIStatus('green') when model is loaded
+        window.setAIStatus = function(state) {
+            const pill = document.getElementById('ai-pill');
+            pill.classList.remove('status-red', 'status-yellow', 'status-green');
+            
+            if (state === 'green' || state === 'ready') {
+                pill.classList.add('status-green');
+                document.getElementById('status-text').innerText = "AI Active";
+            } else if (state === 'red' || state === 'error') {
+                pill.classList.add('status-red');
+                document.getElementById('status-text').innerText = "AI Offline";
+            } else {
+                pill.classList.add('status-yellow');
+                document.getElementById('status-text').innerText = "Loading...";
+            }
+        };
+
+        // UI Mockup Bridges
+        if (typeof startRoutine === 'undefined') window.startRoutine = (m) => console.log(m);
+        if (typeof startMode === 'undefined') window.startMode = (m) => console.log(m);
+        
+        // Example: simulate AI loading then ready (remove this in production)
+        setTimeout(() => window.setAIStatus('green'), 3000);
     </script>
 </body>
 </html>
