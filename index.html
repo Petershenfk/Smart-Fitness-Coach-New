@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Magic Mirror - Your Personal Fitness Coach</title>
     <style>
-        /* --- Modern CSS Variables --- */
+        /* --- COPY YOUR EXISTING CSS VARIABLES HERE --- */
         :root {
             --font-stack: "Hilton Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             --primary-color: #2979FF;
@@ -21,249 +21,98 @@
         }
 
         body {
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: var(--font-stack);
-            height: 100dvh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            -webkit-font-smoothing: antialiased;
+            margin: 0; padding: 0; background-color: var(--bg-color); color: var(--text-main);
+            font-family: var(--font-stack); height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
         }
 
-        /* --- Header & Indicators --- */
-        header {
-            flex: 0 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 20px;
-            background: transparent;
-            z-index: 20;
-        }
-
-        .brand {
-            display: flex;
-            flex-direction: column;
-        }
-
-        h1 {
-            margin: 0;
-            font-size: 1.1rem;
-            font-weight: 700;
-            background: linear-gradient(90deg, #fff, #aebacf);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        #status-text {
-            font-size: 0.75rem;
-            color: var(--primary-color);
-            font-weight: 600;
-            margin-top: 2px;
-            transition: color 0.3s;
-        }
-
-        /* --- Top Right Actions --- */
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        /* AI Status Indicator */
-        .ai-status-pill {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            border: 1px solid var(--surface-border);
-            backdrop-filter: blur(4px);
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background-color: var(--loading-color);
-            box-shadow: 0 0 8px var(--loading-color);
-            transition: background-color 0.3s, box-shadow 0.3s;
-        }
-
-        /* Status Colors */
-        .status-red .status-dot { background-color: var(--warning-color); box-shadow: 0 0 8px var(--warning-color); }
-        .status-yellow .status-dot { background-color: var(--loading-color); box-shadow: 0 0 8px var(--loading-color); animation: pulse-yellow 1.5s infinite; }
+        /* --- Header Styles (Existing) --- */
+        header { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; z-index: 20; }
+        h1 { margin: 0; font-size: 1.1rem; font-weight: 700; background: linear-gradient(90deg, #fff, #aebacf); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        #status-text { font-size: 0.75rem; color: var(--primary-color); font-weight: 600; margin-top: 2px; }
+        
+        .header-actions { display: flex; align-items: center; gap: 12px; }
+        .ai-status-pill { display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.1); padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; border: 1px solid var(--surface-border); backdrop-filter: blur(4px); }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: var(--loading-color); box-shadow: 0 0 8px var(--loading-color); transition: background 0.3s; }
         .status-green .status-dot { background-color: var(--success-color); box-shadow: 0 0 8px var(--success-color); }
+        #menu-toggle { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(8px); border: 1px solid var(--surface-border); color: white; padding: 8px 14px; font-size: 0.8rem; border-radius: 20px; font-weight: 500; }
 
-        @keyframes pulse-yellow {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-
-        /* Menu Button */
-        #menu-toggle {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(8px);
-            border: 1px solid var(--surface-border);
-            color: white;
-            padding: 8px 14px;
-            font-size: 0.8rem;
-            border-radius: 20px;
-            font-weight: 500;
-            cursor: pointer;
-        }
-
-        /* --- Immersive Video Area --- */
+        /* --- Video Area --- */
         #canvas-wrapper {
-            flex: 1;
-            position: relative;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #000;
-            overflow: hidden;
+            flex: 1; position: relative; width: 100%; display: flex; justify-content: center; align-items: center; background: #000; overflow: hidden;
         }
+        @media (min-width: 768px) { #canvas-wrapper { width: 95%; border-radius: var(--radius-lg); margin-bottom: 20px; border: 1px solid var(--surface-border); } }
         
-        @media (min-width: 768px) {
-            #canvas-wrapper {
-                width: 95%;
-                border-radius: var(--radius-lg);
-                margin-bottom: 20px;
-                border: 1px solid var(--surface-border);
-            }
-        }
+        #video, #output { position: absolute; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        #output { z-index: 10; }
 
-        #video, #output {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            object-fit: cover; 
-            transform: scaleX(-1); 
-        }
-
-        #output {
-            z-index: 10;
-        }
-
-        /* --- Hint Notification --- */
+        /* --- Guidance Hint --- */
         #guidance-overlay {
-            position: absolute;
-            top: 20px; 
-            left: 50%;
-            transform: translate(-50%, -20px);
-            background: rgba(255, 23, 68, 0.95);
-            backdrop-filter: blur(4px);
-            color: white;
-            padding: 8px 16px; 
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            letter-spacing: 0.02em;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-            z-index: 50;
-            opacity: 0;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            pointer-events: none;
-            white-space: nowrap;
+            position: absolute; top: 20px; left: 50%; transform: translate(-50%, -20px);
+            background: rgba(255, 23, 68, 0.95); backdrop-filter: blur(4px); color: white;
+            padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 600;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4); z-index: 50; opacity: 0; transition: all 0.3s; pointer-events: none;
+        }
+        #guidance-overlay.active { opacity: 1; transform: translate(-50%, 0); }
+
+        /* --- NEW: PACER STYLES --- */
+        #pacer-container {
+            position: absolute; left: 20px; top: 15%; bottom: 15%; width: 10px;
+            background: rgba(255, 255, 255, 0.1); border-radius: 10px; z-index: 40;
+            pointer-events: none; display: flex; flex-direction: column; justify-content: flex-end;
+            transition: opacity 0.3s;
+        }
+        #pacer-container.hidden { opacity: 0; }
+
+        /* The Moving Bar */
+        #pacer-bar {
+            width: 100%; height: 15%; background: var(--primary-color); border-radius: 10px;
+            box-shadow: 0 0 15px var(--primary-color); position: absolute; bottom: 0;
+            /* Animation set by JS */
+            animation: pacerMove var(--tempo, 2s) infinite ease-in-out;
+        }
+        
+        @keyframes pacerMove {
+            0% { bottom: 0%; background: var(--primary-color); }
+            50% { bottom: 85%; background: var(--success-color); } /* Top */
+            100% { bottom: 0%; background: var(--primary-color); }
         }
 
-        #guidance-overlay.active {
-            opacity: 1;
-            transform: translate(-50%, 0);
+        /* Pulse Mode (for Cardio) */
+        #pacer-container.pulse-mode { background: transparent; width: auto; height: auto; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        #pacer-container.pulse-mode #pacer-bar { display: none; }
+        
+        #pacer-container.pulse-mode::after {
+            content: ''; display: block; width: 60px; height: 60px;
+            border-radius: 50%; border: 4px solid var(--primary-color);
+            animation: pacerPulse var(--tempo, 1s) infinite;
+        }
+        @keyframes pacerPulse {
+            0% { transform: scale(0.8); opacity: 0.5; border-color: var(--primary-color); }
+            50% { transform: scale(1.1); opacity: 1; border-color: var(--success-color); }
+            100% { transform: scale(0.8); opacity: 0.5; border-color: var(--primary-color); }
         }
 
-        /* --- Floating Control Bar --- */
+        /* --- Controls --- */
         #controls {
-            flex: 0 0 auto;
-            padding: 20px 24px 30px;
-            background: linear-gradient(to top, rgba(0,0,0,0.95), transparent);
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            z-index: 30;
-            max-width: 600px;
-            width: 100%;
-            align-self: center;
-            box-sizing: border-box;
+            flex: 0 0 auto; padding: 20px 24px 30px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent);
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; z-index: 30; max-width: 600px; width: 100%; align-self: center;
         }
-
         button {
-            background: var(--surface-glass);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--surface-border);
-            color: var(--text-main);
-            padding: 16px 0;
-            border-radius: var(--radius-md);
-            font-size: 0.8rem;
-            font-weight: 600;
-            font-family: var(--font-stack);
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
+            background: var(--surface-glass); backdrop-filter: blur(12px); border: 1px solid var(--surface-border);
+            color: var(--text-main); padding: 16px 0; border-radius: var(--radius-md); font-size: 0.8rem; font-weight: 600;
+            cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
         }
+        button span.sub { font-size: 0.65rem; color: #ccc; font-weight: 400; }
+        button.primary-action { background: var(--primary-color); border: none; color: white; }
 
-        button span.sub {
-            font-size: 0.65rem;
-            color: #ccc;
-            font-weight: 400;
-        }
-
-        button:active { transform: scale(0.96); }
-        
-        button.primary-action {
-            background: var(--primary-color);
-            border: none;
-            box-shadow: 0 4px 15px rgba(41, 121, 255, 0.3);
-            color: white;
-        }
-        
-        button.primary-action span.sub { color: rgba(255,255,255,0.8); }
-
-        /* --- Sidebar --- */
-        #exercise-sidebar {
-            position: absolute;
-            top: 0; right: 0; bottom: 0;
-            width: 100%; max-width: 320px;
-            background: rgba(15, 17, 21, 0.98);
-            backdrop-filter: blur(16px);
-            z-index: 100;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            border-left: 1px solid var(--surface-border);
-        }
-
+        /* --- Sidebar (Existing) --- */
+        #exercise-sidebar { position: absolute; top: 0; right: 0; bottom: 0; width: 100%; max-width: 320px; background: rgba(15, 17, 21, 0.98); backdrop-filter: blur(16px); z-index: 100; transform: translateX(100%); transition: transform 0.3s ease; display: flex; flex-direction: column; border-left: 1px solid var(--surface-border); }
         #exercise-sidebar.active { transform: translateX(0); }
-
-        .sidebar-header {
-            padding: 20px;
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--surface-border);
-        }
-        
-        .sidebar-header h2 { margin: 0; font-size: 1.1rem; }
-        .close-btn { background: transparent; border: none; font-size: 1.5rem; padding: 5px; color: #aaa; }
-        
+        .sidebar-header { padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--surface-border); }
         .sidebar-content { overflow-y: auto; flex: 1; padding: 20px; }
-        
-        h3 { color: var(--primary-color); font-size: 0.75rem; text-transform: uppercase; margin: 20px 0 10px; opacity: 0.8; }
-        h3:first-child { margin-top: 0; }
-
         ul { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        li { padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; font-size: 0.85rem; text-align: center; }
+        li { padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; font-size: 0.85rem; text-align: center; color: #eee; }
+        h3 { color: var(--primary-color); font-size: 0.75rem; text-transform: uppercase; margin: 20px 0 10px; }
 
     </style>
     
@@ -280,14 +129,8 @@
             <h1>Magic Mirror</h1>
             <div id="status-text">Ready to Workout</div>
         </div>
-        
         <div class="header-actions">
-            <!-- AI Status Indicator -->
-            <div id="ai-pill" class="ai-status-pill status-yellow" title="Model Status">
-                <div class="status-dot"></div>
-                <span>AI</span>
-            </div>
-            
+            <div id="ai-pill" class="ai-status-pill status-yellow"><div class="status-dot"></div><span>AI</span></div>
             <button id="menu-toggle" onclick="toggleSidebar()">Library</button>
         </div>
     </header>
@@ -295,128 +138,69 @@
     <div id="canvas-wrapper">
         <video id="video" playsinline></video>
         <canvas id="output"></canvas>
-        
-        <!-- Hint Overlay -->
         <div id="guidance-overlay">Too Close!</div>
+
+        <!-- NEW: PACER VISUALS -->
+        <div id="pacer-container" class="hidden">
+            <div id="pacer-bar"></div>
+        </div>
     </div>
 
-    <!-- NEW CONTROLS for the 3 Routines -->
     <div id="controls">
-        <button onclick="window.routineManager.start('upperBody')">
-            Upper Body
-            <span class="sub">10 Min</span>
-        </button>
-        
-        <button onclick="window.routineManager.start('lowerBody')">
-            Lower Body
-            <span class="sub">10 Min</span>
-        </button>
-        
-        <button class="primary-action" onclick="window.routineManager.start('fullBody')">
-            Full Body
-            <span class="sub">HIIT</span>
-        </button>
+        <button onclick="window.routineManager.start('upperBody')">Upper Body<span class="sub">10 Min</span></button>
+        <button onclick="window.routineManager.start('lowerBody')">Lower Body<span class="sub">10 Min</span></button>
+        <button class="primary-action" onclick="window.routineManager.start('fullBody')">Full Body<span class="sub">HIIT</span></button>
     </div>
 
-    <!-- Sidebar -->
     <div id="exercise-sidebar">
         <div class="sidebar-header">
             <h2>Exercises</h2>
-            <button class="close-btn" onclick="toggleSidebar()">✕</button>
+            <button class="close-btn" style="background:none;border:none;color:white;font-size:1.5rem;" onclick="toggleSidebar()">✕</button>
         </div>
         <div class="sidebar-content">
             <h3>Strength</h3>
-            <ul>
-                <li>Squat</li><li>Push-up</li><li>Lunge</li><li>Dip</li>
-            </ul>
+            <ul><li>Squat</li><li>Push-up</li><li>Lunge</li><li>Dip</li></ul>
             <h3>Cardio</h3>
-            <ul>
-                <li>Jumping Jack</li><li>High Knees</li><li>Burpee</li>
-            </ul>
+            <ul><li>Jumping Jack</li><li>High Knees</li><li>Burpee</li></ul>
             <h3>Core</h3>
-            <ul>
-                <li>Plank</li><li>Wall Sit</li>
-            </ul>
+            <ul><li>Plank</li><li>Wall Sit</li></ul>
         </div>
     </div>
 
-    <!-- --- PATCH: Text Mirror Fix --- -->
-    <script>
-        (function() {
-            const originalFillText = CanvasRenderingContext2D.prototype.fillText;
-            const originalStrokeText = CanvasRenderingContext2D.prototype.strokeText;
-
-            CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
-                this.save();
-                this.translate(x, y);
-                this.scale(-1, 1);
-                originalFillText.call(this, text, 0, 0, maxWidth);
-                this.restore();
-            };
-
-            CanvasRenderingContext2D.prototype.strokeText = function(text, x, y, maxWidth) {
-                this.save();
-                this.translate(x, y);
-                this.scale(-1, 1);
-                originalStrokeText.call(this, text, 0, 0, maxWidth);
-                this.restore();
-            };
-        })();
-    </script>
-
-    <!-- Project Scripts -->
+    <!-- SCRIPTS ORDER -->
+    <script src="Pacer.js"></script>    <!-- Load Pacer first or early -->
     <script src="Exercise.js"></script>
     <script src="Script.js"></script>
-    <!-- New Routine Manager -->
-    <script src="Routines.js"></script> 
+    <script src="Routines.js"></script>
 
-    <!-- Logic -->
+    <!-- Logic Glue -->
     <script>
-        function toggleSidebar() {
-            document.getElementById('exercise-sidebar').classList.toggle('active');
-        }
+        function toggleSidebar() { document.getElementById('exercise-sidebar').classList.toggle('active'); }
 
-        // --- API for Script.js ---
+        // Text Mirror Patch
+        (function() {
+            const originalFillText = CanvasRenderingContext2D.prototype.fillText;
+            CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
+                this.save(); this.translate(x, y); this.scale(-1, 1);
+                originalFillText.call(this, text, 0, 0, maxWidth); this.restore();
+            };
+        })();
 
-        // 1. Update Hint
+        // UI Helpers
         window.updateHint = function(message) {
             const el = document.getElementById('guidance-overlay');
-            if (message) {
-                el.innerText = message;
-                el.classList.add('active');
-            } else {
-                el.classList.remove('active');
-            }
+            if (message) { el.innerText = message; el.classList.add('active'); } 
+            else { el.classList.remove('active'); }
         };
 
-        // 2. Update AI Status
         window.setAIStatus = function(state) {
             const pill = document.getElementById('ai-pill');
-            const statusText = document.getElementById('status-text');
+            const txt = document.getElementById('status-text');
             pill.classList.remove('status-red', 'status-yellow', 'status-green');
-            
-            if (state === 'green' || state === 'ready') {
-                pill.classList.add('status-green');
-                // Only update text if not in a routine
-                if (!window.routineManager || !window.routineManager.active) {
-                    statusText.innerText = "AI Ready";
-                }
-            } else if (state === 'red' || state === 'error') {
-                pill.classList.add('status-red');
-                statusText.innerText = "AI Offline";
-            } else {
-                pill.classList.add('status-yellow');
-                statusText.innerText = "Loading AI...";
-            }
+            if (state === 'green') { pill.classList.add('status-green'); if(!window.routineManager.active) txt.innerText = "AI Ready"; }
+            else if (state === 'red') { pill.classList.add('status-red'); txt.innerText = "Offline"; }
+            else { pill.classList.add('status-yellow'); txt.innerText = "Loading..."; }
         };
-
-        // Mockups to prevent crashes if Script.js is missing
-        if (typeof startMode === 'undefined') {
-            window.startMode = (m) => console.log(`[Mock] Mode switched to: ${m}`);
-        }
-        
-        // Simulating AI Load for demo
-        setTimeout(() => window.setAIStatus('green'), 2500);
     </script>
 </body>
 </html>
