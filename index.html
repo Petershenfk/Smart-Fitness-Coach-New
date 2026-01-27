@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Magic Mirror - Your Personal Fitness Coach</title>
     <style>
-        /* --- COPY YOUR EXISTING CSS VARIABLES HERE --- */
         :root {
             --font-stack: "Hilton Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             --primary-color: #2979FF;
@@ -25,7 +24,7 @@
             font-family: var(--font-stack); height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
         }
 
-        /* --- Header Styles (Existing) --- */
+        /* --- Header Styles --- */
         header { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; z-index: 20; }
         h1 { margin: 0; font-size: 1.1rem; font-weight: 700; background: linear-gradient(90deg, #fff, #aebacf); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         #status-text { font-size: 0.75rem; color: var(--primary-color); font-weight: 600; margin-top: 2px; }
@@ -54,7 +53,7 @@
         }
         #guidance-overlay.active { opacity: 1; transform: translate(-50%, 0); }
 
-        /* --- NEW: PACER STYLES --- */
+        /* --- PACER STYLES --- */
         #pacer-container {
             position: absolute; left: 20px; top: 15%; bottom: 15%; width: 10px;
             background: rgba(255, 255, 255, 0.1); border-radius: 10px; z-index: 40;
@@ -140,7 +139,7 @@
         <canvas id="output"></canvas>
         <div id="guidance-overlay">Too Close!</div>
 
-        <!-- NEW: PACER VISUALS -->
+        <!-- PACER VISUALS -->
         <div id="pacer-container" class="hidden">
             <div id="pacer-bar"></div>
         </div>
@@ -204,3 +203,4 @@
     </script>
 </body>
 </html>
+
