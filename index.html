@@ -5,15 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Magic Mirror - Your Personal Fitness Coach</title>
     <style>
+        /* --- Modern CSS Variables --- */
         :root {
             --font-stack: "Hilton Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             --primary-color: #2979FF;
+            --secondary-color: #00E5FF;
             --warning-color: #FF1744;
             --success-color: #00E676;
             --loading-color: #FFEA00;
             --bg-color: #0F1115;
-            --surface-glass: rgba(25, 29, 35, 0.85);
-            --surface-border: rgba(255, 255, 255, 0.1);
+            --surface-glass: rgba(20, 24, 30, 0.9);
+            --surface-border: rgba(255, 255, 255, 0.15);
             --text-main: #FFFFFF;
             --radius-lg: 24px;
             --radius-md: 16px;
@@ -24,10 +26,10 @@
             font-family: var(--font-stack); height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
         }
 
-        /* --- Header Styles --- */
-        header { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; z-index: 20; }
-        h1 { margin: 0; font-size: 1.1rem; font-weight: 700; background: linear-gradient(90deg, #fff, #aebacf); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        #status-text { font-size: 0.75rem; color: var(--primary-color); font-weight: 600; margin-top: 2px; }
+        /* --- Header --- */
+        header { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; z-index: 20; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
+        h1 { margin: 0; font-size: 1.2rem; font-weight: 700; background: linear-gradient(90deg, #fff, #81D4FA); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        #status-text { font-size: 0.75rem; color: var(--primary-color); font-weight: 600; margin-top: 2px; text-transform: uppercase; letter-spacing: 1px; }
         
         .header-actions { display: flex; align-items: center; gap: 12px; }
         .ai-status-pill { display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.1); padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; border: 1px solid var(--surface-border); backdrop-filter: blur(4px); }
@@ -37,81 +39,110 @@
 
         /* --- Video Area --- */
         #canvas-wrapper {
-            flex: 1; position: relative; width: 100%; display: flex; justify-content: center; align-items: center; background: #000; overflow: hidden;
+            flex: 1; position: relative; width: 100%; 
+            display: flex; justify-content: center; align-items: center; 
+            background: #000; overflow: hidden;
         }
+        /* Desktop: Add frame */
         @media (min-width: 768px) { #canvas-wrapper { width: 95%; border-radius: var(--radius-lg); margin-bottom: 20px; border: 1px solid var(--surface-border); } }
         
+        /* Object Fit Cover ensures fullscreen feel (Zoomed Out via HD Resolution in JS) */
         #video, #output { position: absolute; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
         #output { z-index: 10; }
 
         /* --- Guidance Hint --- */
         #guidance-overlay {
-            position: absolute; top: 20px; left: 50%; transform: translate(-50%, -20px);
-            background: rgba(255, 23, 68, 0.95); backdrop-filter: blur(4px); color: white;
-            padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 600;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4); z-index: 50; opacity: 0; transition: all 0.3s; pointer-events: none;
+            position: absolute; top: 80px; left: 50%; transform: translate(-50%, -20px);
+            background: rgba(255, 23, 68, 0.9); backdrop-filter: blur(8px); color: white;
+            padding: 10px 24px; border-radius: 30px; font-size: 0.95rem; font-weight: 700;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 50; opacity: 0; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); pointer-events: none;
         }
         #guidance-overlay.active { opacity: 1; transform: translate(-50%, 0); }
 
-        /* --- PACER STYLES --- */
+        /* --- Pacer Visuals --- */
         #pacer-container {
-            position: absolute; left: 20px; top: 15%; bottom: 15%; width: 10px;
-            background: rgba(255, 255, 255, 0.1); border-radius: 10px; z-index: 40;
+            position: absolute; left: 20px; top: 15%; bottom: 15%; width: 8px;
+            background: rgba(255, 255, 255, 0.15); border-radius: 10px; z-index: 40;
             pointer-events: none; display: flex; flex-direction: column; justify-content: flex-end;
             transition: opacity 0.3s;
         }
         #pacer-container.hidden { opacity: 0; }
 
-        /* The Moving Bar */
         #pacer-bar {
             width: 100%; height: 15%; background: var(--primary-color); border-radius: 10px;
-            box-shadow: 0 0 15px var(--primary-color); position: absolute; bottom: 0;
-            /* Animation set by JS */
+            box-shadow: 0 0 20px var(--primary-color); position: absolute; bottom: 0;
             animation: pacerMove var(--tempo, 2s) infinite ease-in-out;
         }
         
         @keyframes pacerMove {
-            0% { bottom: 0%; background: var(--primary-color); }
-            50% { bottom: 85%; background: var(--success-color); } /* Top */
-            100% { bottom: 0%; background: var(--primary-color); }
-        }
-
-        /* Pulse Mode (for Cardio) */
-        #pacer-container.pulse-mode { background: transparent; width: auto; height: auto; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        #pacer-container.pulse-mode #pacer-bar { display: none; }
-        
-        #pacer-container.pulse-mode::after {
-            content: ''; display: block; width: 60px; height: 60px;
-            border-radius: 50%; border: 4px solid var(--primary-color);
-            animation: pacerPulse var(--tempo, 1s) infinite;
-        }
-        @keyframes pacerPulse {
-            0% { transform: scale(0.8); opacity: 0.5; border-color: var(--primary-color); }
-            50% { transform: scale(1.1); opacity: 1; border-color: var(--success-color); }
-            100% { transform: scale(0.8); opacity: 0.5; border-color: var(--primary-color); }
+            0% { bottom: 0%; background: var(--primary-color); box-shadow: 0 0 20px var(--primary-color); }
+            50% { bottom: 85%; background: var(--secondary-color); box-shadow: 0 0 30px var(--secondary-color); }
+            100% { bottom: 0%; background: var(--primary-color); box-shadow: 0 0 20px var(--primary-color); }
         }
 
         /* --- Controls --- */
-        #controls {
-            flex: 0 0 auto; padding: 20px 24px 30px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent);
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; z-index: 30; max-width: 600px; width: 100%; align-self: center;
+        #controls-container {
+            flex: 0 0 auto;
+            width: 100%;
+            z-index: 30;
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 20%, transparent);
+            padding-bottom: 30px; /* Safe area */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
         }
-        button {
-            background: var(--surface-glass); backdrop-filter: blur(12px); border: 1px solid var(--surface-border);
-            color: var(--text-main); padding: 16px 0; border-radius: var(--radius-md); font-size: 0.8rem; font-weight: 600;
-            cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-        }
-        button span.sub { font-size: 0.65rem; color: #ccc; font-weight: 400; }
-        button.primary-action { background: var(--primary-color); border: none; color: white; }
 
-        /* --- Sidebar (Existing) --- */
+        /* Speed Options (Hidden by default) */
+        #speed-controls {
+            display: none; /* Flex when active */
+            gap: 8px;
+            background: rgba(255,255,255,0.1);
+            padding: 6px;
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
+            margin-bottom: 5px;
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .speed-btn {
+            background: transparent; border: none; color: #aaa;
+            padding: 8px 16px; font-size: 0.75rem; font-weight: 700; border-radius: 20px;
+        }
+        .speed-btn.active { background: var(--primary-color); color: white; box-shadow: 0 2px 10px rgba(41, 121, 255, 0.4); }
+
+        /* Main Buttons */
+        #main-controls {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+            width: 100%; max-width: 600px; padding: 0 20px; box-sizing: border-box;
+        }
+
+        button.mode-btn {
+            background: var(--surface-glass); backdrop-filter: blur(12px); border: 1px solid var(--surface-border);
+            color: var(--text-main); padding: 14px 0; border-radius: var(--radius-md); font-size: 0.75rem; font-weight: 700;
+            cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+            transition: all 0.2s;
+        }
+        button.mode-btn:active { transform: scale(0.95); }
+        button.mode-btn span.sub { font-size: 0.6rem; color: #bbb; font-weight: 400; }
+        
+        button.mode-btn.active-mode {
+            border-color: var(--primary-color);
+            background: rgba(41, 121, 255, 0.2);
+            color: white;
+        }
+        
+        button.primary-btn { background: var(--primary-color); border: none; color: white; }
+
+        /* --- Sidebar --- */
         #exercise-sidebar { position: absolute; top: 0; right: 0; bottom: 0; width: 100%; max-width: 320px; background: rgba(15, 17, 21, 0.98); backdrop-filter: blur(16px); z-index: 100; transform: translateX(100%); transition: transform 0.3s ease; display: flex; flex-direction: column; border-left: 1px solid var(--surface-border); }
         #exercise-sidebar.active { transform: translateX(0); }
         .sidebar-header { padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--surface-border); }
         .sidebar-content { overflow-y: auto; flex: 1; padding: 20px; }
         ul { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        li { padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; font-size: 0.85rem; text-align: center; color: #eee; }
-        h3 { color: var(--primary-color); font-size: 0.75rem; text-transform: uppercase; margin: 20px 0 10px; }
+        li { padding: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; font-size: 0.85rem; text-align: center; color: #eee; }
+        h3 { color: var(--primary-color); font-size: 0.75rem; text-transform: uppercase; margin: 24px 0 12px; letter-spacing: 1px; }
 
     </style>
     
@@ -126,7 +157,7 @@
     <header>
         <div class="brand">
             <h1>Magic Mirror</h1>
-            <div id="status-text">Ready to Workout</div>
+            <div id="status-text">Ready</div>
         </div>
         <div class="header-actions">
             <div id="ai-pill" class="ai-status-pill status-yellow"><div class="status-dot"></div><span>AI</span></div>
@@ -139,18 +170,39 @@
         <canvas id="output"></canvas>
         <div id="guidance-overlay">Too Close!</div>
 
-        <!-- PACER VISUALS -->
+        <!-- Pacer Visual -->
         <div id="pacer-container" class="hidden">
             <div id="pacer-bar"></div>
         </div>
     </div>
 
-    <div id="controls">
-        <button onclick="window.routineManager.start('upperBody')">Upper Body<span class="sub">10 Min</span></button>
-        <button onclick="window.routineManager.start('lowerBody')">Lower Body<span class="sub">10 Min</span></button>
-        <button class="primary-action" onclick="window.routineManager.start('fullBody')">Full Body<span class="sub">HIIT</span></button>
+    <div id="controls-container">
+        
+        <!-- Speed Options (Only for Free Workout) -->
+        <div id="speed-controls">
+            <button class="speed-btn" onclick="setFreeSpeed(4, this)">SLOW</button>
+            <button class="speed-btn active" onclick="setFreeSpeed(2.5, this)">MID</button>
+            <button class="speed-btn" onclick="setFreeSpeed(1.2, this)">FAST</button>
+        </div>
+
+        <!-- Main Buttons -->
+        <div id="main-controls">
+            <button class="mode-btn" onclick="startRoutineUI('upperBody', this)">
+                Upper<span class="sub">10m</span>
+            </button>
+            <button class="mode-btn" onclick="startRoutineUI('lowerBody', this)">
+                Lower<span class="sub">10m</span>
+            </button>
+            <button class="mode-btn" onclick="startRoutineUI('fullBody', this)">
+                Full<span class="sub">HIIT</span>
+            </button>
+            <button class="mode-btn primary-btn" onclick="startFreeWorkoutUI(this)">
+                FREE<span class="sub">Flex</span>
+            </button>
+        </div>
     </div>
 
+    <!-- Sidebar -->
     <div id="exercise-sidebar">
         <div class="sidebar-header">
             <h2>Exercises</h2>
@@ -161,22 +213,20 @@
             <ul><li>Squat</li><li>Push-up</li><li>Lunge</li><li>Dip</li></ul>
             <h3>Cardio</h3>
             <ul><li>Jumping Jack</li><li>High Knees</li><li>Burpee</li></ul>
-            <h3>Core</h3>
-            <ul><li>Plank</li><li>Wall Sit</li></ul>
         </div>
     </div>
 
-    <!-- SCRIPTS ORDER -->
-    <script src="Pacer.js"></script>    <!-- Load Pacer first or early -->
+    <!-- Scripts -->
+    <script src="Pacer.js"></script>
     <script src="Exercise.js"></script>
     <script src="Script.js"></script>
     <script src="Routines.js"></script>
 
-    <!-- Logic Glue -->
+    <!-- UI Logic Glue -->
     <script>
         function toggleSidebar() { document.getElementById('exercise-sidebar').classList.toggle('active'); }
 
-        // Text Mirror Patch
+        // Mirror Text Patch
         (function() {
             const originalFillText = CanvasRenderingContext2D.prototype.fillText;
             CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
@@ -185,7 +235,63 @@
             };
         })();
 
-        // UI Helpers
+        // --- UI Interactions ---
+
+        let currentFreeSpeed = 2.5; // Default Mid
+
+        function setActiveBtn(btn) {
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active-mode'));
+            if(btn) btn.classList.add('active-mode');
+        }
+
+        function startRoutineUI(planId, btn) {
+            setActiveBtn(btn);
+            // Hide speed controls
+            document.getElementById('speed-controls').style.display = 'none';
+            
+            // Start Routine
+            if(window.routineManager) window.routineManager.start(planId);
+        }
+
+        function startFreeWorkoutUI(btn) {
+            setActiveBtn(btn);
+            
+            // Show speed controls
+            document.getElementById('speed-controls').style.display = 'flex';
+            
+            // Stop any routine
+            if(window.routineManager) window.routineManager.active = false;
+            
+            // Default to Squat for Free Mode
+            if(window.startMode) window.startMode('squat');
+            
+            // Start Pacer
+            triggerFreePacer();
+            
+            updateHeader("Free Workout");
+            window.updateHint("Free Mode: Squats");
+        }
+
+        function setFreeSpeed(seconds, btn) {
+            // Update UI
+            document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            currentFreeSpeed = seconds;
+            triggerFreePacer();
+        }
+
+        function triggerFreePacer() {
+            if(window.pacer) {
+                window.pacer.start(currentFreeSpeed, 'strength');
+            }
+        }
+
+        function updateHeader(text) {
+            document.getElementById('status-text').innerText = text;
+        }
+
+        // Global Helpers
         window.updateHint = function(message) {
             const el = document.getElementById('guidance-overlay');
             if (message) { el.innerText = message; el.classList.add('active'); } 
@@ -196,11 +302,17 @@
             const pill = document.getElementById('ai-pill');
             const txt = document.getElementById('status-text');
             pill.classList.remove('status-red', 'status-yellow', 'status-green');
-            if (state === 'green') { pill.classList.add('status-green'); if(!window.routineManager.active) txt.innerText = "AI Ready"; }
-            else if (state === 'red') { pill.classList.add('status-red'); txt.innerText = "Offline"; }
-            else { pill.classList.add('status-yellow'); txt.innerText = "Loading..."; }
+            
+            if (state === 'green') { 
+                pill.classList.add('status-green'); 
+                // Only reset text if not active
+                if (!document.querySelector('.active-mode')) txt.innerText = "Ready"; 
+            } else if (state === 'red') { 
+                pill.classList.add('status-red'); txt.innerText = "Offline"; 
+            } else { 
+                pill.classList.add('status-yellow'); txt.innerText = "Loading..."; 
+            }
         };
     </script>
 </body>
 </html>
-
