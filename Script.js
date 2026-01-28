@@ -189,4 +189,50 @@ function drawSkeleton(keypoints) {
 }
 
 // Start
-init();
+async function init() {
+    video = document.getElementById('video');
+    canvas = document.getElementById('output');
+    ctx = canvas.getContext('2d');
+
+    // 1. Setup Camera - REQUEST HD (1280x720) for Wider Angle ("Zoom Out")
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                width: { ideal: 1280 }, 
+                height: { ideal: 720 },
+                facingMode: 'user'
+            } 
+        });
+        video.srcObject = stream;
+        await new Promise(resolve => video.onloadedmetadata = resolve);
+        video.play();
+        
+        // Match canvas to video size
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        // Re-adjust canvas style to match video style (handling object-fit)
+        // This ensures the drawing aligns even if CSS resizes the video
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        
+    } catch (err) {
+        alert("Camera error: " + err.message);
+        if(window.setAIStatus) window.setAIStatus('red');
+        return;
+    }
+
+    // 2. Load AI Model
+    if(window.setAIStatus) window.setAIStatus('yellow');
+    try {
+        detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, {
+            modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
+        });
+        isModelReady = true;
+        if(window.setAIStatus) window.setAIStatus('green');
+        render(); 
+    } catch (err) {
+        console.error(err);
+        if(window.setAIStatus) window.setAIStatus('red');
+    }
+}
