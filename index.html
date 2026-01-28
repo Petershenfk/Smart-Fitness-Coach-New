@@ -22,62 +22,144 @@
         }
 
         body {
-            margin: 0; padding: 0; background-color: var(--bg-color); color: var(--text-main);
-            font-family: var(--font-stack); height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
+            margin: 0; padding: 0; 
+            background-color: var(--bg-color); 
+            color: var(--text-main);
+            font-family: var(--font-stack); 
+            height: 100dvh; /* Dynamic Height for Mobile Browsers */
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden;
         }
 
         /* --- Header --- */
-        header { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; z-index: 20; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
-        h1 { margin: 0; font-size: 1.2rem; font-weight: 700; background: linear-gradient(90deg, #fff, #81D4FA); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        #status-text { font-size: 0.75rem; color: var(--primary-color); font-weight: 600; margin-top: 2px; text-transform: uppercase; letter-spacing: 1px; }
-        
-        .header-actions { display: flex; align-items: center; gap: 12px; }
-        .ai-status-pill { display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.1); padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; border: 1px solid var(--surface-border); backdrop-filter: blur(4px); }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: var(--loading-color); box-shadow: 0 0 8px var(--loading-color); transition: background 0.3s; }
-        .status-green .status-dot { background-color: var(--success-color); box-shadow: 0 0 8px var(--success-color); }
-        #menu-toggle { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(8px); border: 1px solid var(--surface-border); color: white; padding: 8px 14px; font-size: 0.8rem; border-radius: 20px; font-weight: 500; }
-
-        /* --- Video Area --- */
-        #canvas-wrapper {
-            flex: 1; position: relative; width: 100%; 
-            display: flex; justify-content: center; align-items: center; 
-            background: #000; overflow: hidden;
+        header { 
+            flex: 0 0 auto; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 10px 16px; 
+            z-index: 20; 
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); 
+            height: 50px;
         }
-        /* Desktop: Add frame */
-        @media (min-width: 768px) { #canvas-wrapper { width: 95%; border-radius: var(--radius-lg); margin-bottom: 20px; border: 1px solid var(--surface-border); } }
         
-        /* Object Fit Cover ensures fullscreen feel (Zoomed Out via HD Resolution in JS) */
-        #video, #output { position: absolute; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        h1 { 
+            margin: 0; 
+            font-size: 1.1rem; 
+            font-weight: 700; 
+            background: linear-gradient(90deg, #fff, #81D4FA); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+        }
+        
+        #status-text { font-size: 0.7rem; color: var(--primary-color); font-weight: 600; text-transform: uppercase; margin-top: 2px; }
+        
+        .header-actions { display: flex; align-items: center; gap: 8px; }
+        
+        .ai-status-pill { 
+            display: flex; align-items: center; gap: 5px; 
+            background: rgba(255, 255, 255, 0.1); padding: 4px 10px; 
+            border-radius: 20px; font-size: 0.7rem; font-weight: 600; 
+            border: 1px solid var(--surface-border); backdrop-filter: blur(4px); 
+        }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; background-color: var(--loading-color); }
+        .status-green .status-dot { background-color: var(--success-color); box-shadow: 0 0 5px var(--success-color); }
+        
+        #menu-toggle { 
+            background: rgba(255, 255, 255, 0.15); border: 1px solid var(--surface-border); 
+            color: white; padding: 6px 12px; font-size: 0.75rem; border-radius: 20px; font-weight: 500; 
+        }
+
+        /* --- Video Area (The crucial fix for mobile) --- */
+        #canvas-wrapper {
+            flex: 1; 
+            position: relative; 
+            width: 100%; 
+            min-height: 0; /* Important: Allows flex child to shrink below content size */
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            background: #000; 
+            overflow: hidden;
+        }
+
+        /* Desktop: Add frame */
+        @media (min-width: 768px) { 
+            #canvas-wrapper { 
+                width: 95%; 
+                border-radius: var(--radius-lg); 
+                margin: 0 auto 10px auto; 
+                border: 1px solid var(--surface-border); 
+            } 
+        }
+
+        #video, #output { 
+            position: absolute; 
+            width: 100%; 
+            height: 100%; 
+            /* CONTAIN: Ensures the full body is visible on portrait screens without cropping */
+            object-fit: contain; 
+            transform: scaleX(-1); 
+        }
+        
         #output { z-index: 10; }
 
         /* --- Guidance Hint --- */
         #guidance-overlay {
-            position: absolute; top: 80px; left: 50%; transform: translate(-50%, -20px);
-            background: rgba(255, 23, 68, 0.9); backdrop-filter: blur(8px); color: white;
-            padding: 10px 24px; border-radius: 30px; font-size: 0.95rem; font-weight: 700;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 50; opacity: 0; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); pointer-events: none;
+            position: absolute; 
+            top: 20px; /* Moved up to avoid blocking center view */
+            left: 50%; 
+            transform: translate(-50%, -20px);
+            background: rgba(255, 23, 68, 0.9); 
+            backdrop-filter: blur(8px); 
+            color: white;
+            padding: 8px 20px; 
+            border-radius: 30px; 
+            font-size: 0.9rem; 
+            font-weight: 700;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3); 
+            z-index: 50; 
+            opacity: 0; 
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); 
+            pointer-events: none;
+            white-space: nowrap;
         }
         #guidance-overlay.active { opacity: 1; transform: translate(-50%, 0); }
 
         /* --- Pacer Visuals --- */
         #pacer-container {
-            position: absolute; left: 20px; top: 15%; bottom: 15%; width: 8px;
-            background: rgba(255, 255, 255, 0.15); border-radius: 10px; z-index: 40;
-            pointer-events: none; display: flex; flex-direction: column; justify-content: flex-end;
+            position: absolute; 
+            left: 10px; /* Closer to edge for mobile */
+            top: 15%; 
+            bottom: 15%; 
+            width: 6px;
+            background: rgba(255, 255, 255, 0.15); 
+            border-radius: 10px; 
+            z-index: 40;
+            pointer-events: none; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: flex-end;
             transition: opacity 0.3s;
         }
         #pacer-container.hidden { opacity: 0; }
 
         #pacer-bar {
-            width: 100%; height: 15%; background: var(--primary-color); border-radius: 10px;
-            box-shadow: 0 0 20px var(--primary-color); position: absolute; bottom: 0;
+            width: 100%; 
+            height: 15%; 
+            background: var(--primary-color); 
+            border-radius: 10px;
+            box-shadow: 0 0 15px var(--primary-color); 
+            position: absolute; 
+            bottom: 0;
             animation: pacerMove var(--tempo, 2s) infinite ease-in-out;
         }
         
         @keyframes pacerMove {
-            0% { bottom: 0%; background: var(--primary-color); box-shadow: 0 0 20px var(--primary-color); }
-            50% { bottom: 85%; background: var(--secondary-color); box-shadow: 0 0 30px var(--secondary-color); }
-            100% { bottom: 0%; background: var(--primary-color); box-shadow: 0 0 20px var(--primary-color); }
+            0% { bottom: 0%; background: var(--primary-color); box-shadow: 0 0 15px var(--primary-color); }
+            50% { bottom: 85%; background: var(--secondary-color); box-shadow: 0 0 25px var(--secondary-color); }
+            100% { bottom: 0%; background: var(--primary-color); box-shadow: 0 0 15px var(--primary-color); }
         }
 
         /* --- Controls --- */
@@ -85,20 +167,21 @@
             flex: 0 0 auto;
             width: 100%;
             z-index: 30;
-            background: linear-gradient(to top, rgba(0,0,0,0.95) 20%, transparent);
-            padding-bottom: 30px; /* Safe area */
+            background: linear-gradient(to top, rgba(0,0,0,1) 30%, transparent);
+            padding-bottom: max(20px, env(safe-area-inset-bottom)); /* iOS Safe Area */
+            padding-top: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
-        /* Speed Options (Hidden by default) */
+        /* Speed Options */
         #speed-controls {
-            display: none; /* Flex when active */
+            display: none; 
             gap: 8px;
             background: rgba(255,255,255,0.1);
-            padding: 6px;
+            padding: 4px;
             border-radius: 30px;
             backdrop-filter: blur(10px);
             margin-bottom: 5px;
@@ -112,31 +195,61 @@
         }
         .speed-btn.active { background: var(--primary-color); color: white; box-shadow: 0 2px 10px rgba(41, 121, 255, 0.4); }
 
-        /* Main Buttons */
+        /* Main Buttons Grid */
         #main-controls {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
-            width: 100%; max-width: 600px; padding: 0 20px; box-sizing: border-box;
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 8px;
+            width: 100%; 
+            max-width: 600px; 
+            padding: 0 12px; 
+            box-sizing: border-box;
         }
 
         button.mode-btn {
-            background: var(--surface-glass); backdrop-filter: blur(12px); border: 1px solid var(--surface-border);
-            color: var(--text-main); padding: 14px 0; border-radius: var(--radius-md); font-size: 0.75rem; font-weight: 700;
-            cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-            transition: all 0.2s;
+            background: var(--surface-glass); 
+            backdrop-filter: blur(12px); 
+            border: 1px solid var(--surface-border);
+            color: var(--text-main); 
+            padding: 12px 0; 
+            border-radius: 12px; 
+            font-size: 0.7rem; 
+            font-weight: 700;
+            cursor: pointer; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 2px;
+            transition: transform 0.1s, background 0.2s;
+            touch-action: manipulation;
         }
-        button.mode-btn:active { transform: scale(0.95); }
+        button.mode-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
         button.mode-btn span.sub { font-size: 0.6rem; color: #bbb; font-weight: 400; }
         
         button.mode-btn.active-mode {
             border-color: var(--primary-color);
-            background: rgba(41, 121, 255, 0.2);
+            background: rgba(41, 121, 255, 0.25);
             color: white;
+            box-shadow: 0 0 15px rgba(41, 121, 255, 0.15);
         }
         
         button.primary-btn { background: var(--primary-color); border: none; color: white; }
 
         /* --- Sidebar --- */
-        #exercise-sidebar { position: absolute; top: 0; right: 0; bottom: 0; width: 100%; max-width: 320px; background: rgba(15, 17, 21, 0.98); backdrop-filter: blur(16px); z-index: 100; transform: translateX(100%); transition: transform 0.3s ease; display: flex; flex-direction: column; border-left: 1px solid var(--surface-border); }
+        #exercise-sidebar { 
+            position: absolute; top: 0; right: 0; bottom: 0; 
+            width: 85%; /* Mobile Friendly Width */
+            max-width: 320px; 
+            background: rgba(15, 17, 21, 0.98); 
+            backdrop-filter: blur(16px); 
+            z-index: 100; 
+            transform: translateX(100%); 
+            transition: transform 0.3s ease; 
+            display: flex; flex-direction: column; 
+            border-left: 1px solid var(--surface-border); 
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+        }
         #exercise-sidebar.active { transform: translateX(0); }
         .sidebar-header { padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--surface-border); }
         .sidebar-content { overflow-y: auto; flex: 1; padding: 20px; }
@@ -217,12 +330,13 @@
     </div>
 
     <!-- Scripts -->
+    <!-- Ensure these files exist in your directory -->
     <script src="Pacer.js"></script>
     <script src="Exercise.js"></script>
     <script src="Script.js"></script>
     <script src="Routines.js"></script>
 
-    <!-- UI Logic Glue -->
+    <!-- UI Logic -->
     <script>
         function toggleSidebar() { document.getElementById('exercise-sidebar').classList.toggle('active'); }
 
@@ -246,37 +360,26 @@
 
         function startRoutineUI(planId, btn) {
             setActiveBtn(btn);
-            // Hide speed controls
             document.getElementById('speed-controls').style.display = 'none';
-            
-            // Start Routine
             if(window.routineManager) window.routineManager.start(planId);
         }
 
         function startFreeWorkoutUI(btn) {
             setActiveBtn(btn);
-            
-            // Show speed controls
             document.getElementById('speed-controls').style.display = 'flex';
-            
-            // Stop any routine
             if(window.routineManager) window.routineManager.active = false;
             
             // Default to Squat for Free Mode
             if(window.startMode) window.startMode('squat');
             
-            // Start Pacer
             triggerFreePacer();
-            
             updateHeader("Free Workout");
             window.updateHint("Free Mode: Squats");
         }
 
         function setFreeSpeed(seconds, btn) {
-            // Update UI
             document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            
             currentFreeSpeed = seconds;
             triggerFreePacer();
         }
@@ -305,7 +408,6 @@
             
             if (state === 'green') { 
                 pill.classList.add('status-green'); 
-                // Only reset text if not active
                 if (!document.querySelector('.active-mode')) txt.innerText = "Ready"; 
             } else if (state === 'red') { 
                 pill.classList.add('status-red'); txt.innerText = "Offline"; 
