@@ -30,11 +30,19 @@
         header { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; z-index: 20; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); height: 50px; }
         h1 { margin: 0; font-size: 1.1rem; font-weight: 700; background: linear-gradient(90deg, #fff, #81D4FA); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         #status-text { font-size: 0.7rem; color: var(--primary-color); font-weight: 600; text-transform: uppercase; margin-top: 2px; }
+        
         .header-actions { display: flex; align-items: center; gap: 8px; }
         .ai-status-pill { display: flex; align-items: center; gap: 5px; background: rgba(255, 255, 255, 0.1); padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; border: 1px solid var(--surface-border); backdrop-filter: blur(4px); }
         .status-dot { width: 6px; height: 6px; border-radius: 50%; background-color: var(--loading-color); }
         .status-green .status-dot { background-color: var(--success-color); box-shadow: 0 0 5px var(--success-color); }
-        /* Note: Menu toggle button is hidden in Free Mode logic */
+        
+        /* Music Button */
+        #music-toggle {
+            background: rgba(255, 255, 255, 0.1); border: 1px solid var(--surface-border);
+            color: #ccc; padding: 6px 12px; font-size: 1rem; border-radius: 20px; 
+            cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 5px;
+        }
+        #music-toggle.playing { color: var(--success-color); border-color: var(--success-color); background: rgba(0, 230, 118, 0.1); }
         
         /* --- Video Area --- */
         #canvas-wrapper {
@@ -138,12 +146,16 @@
             <div id="status-text">Ready</div>
         </div>
         <div class="header-actions">
+            <!-- Music Toggle -->
+            <button id="music-toggle" onclick="window.musicManager.toggle()">
+                🎵 Off
+            </button>
             <div id="ai-pill" class="ai-status-pill status-yellow"><div class="status-dot"></div><span>AI</span></div>
-            <!-- Menu toggle removed, automatic via Free Mode -->
         </div>
     </header>
 
     <div id="canvas-wrapper">
+        <!-- Autoplay and Muted required for mobile -->
         <video id="video" playsinline muted autoplay></video>
         <canvas id="output"></canvas>
         <div id="guidance-overlay">Too Close!</div>
@@ -151,7 +163,7 @@
         <!-- Pacer -->
         <div id="pacer-container" class="hidden"><div id="pacer-bar"></div></div>
 
-        <!-- NEW: Gesture Instructor -->
+        <!-- Gesture Instructor -->
         <div id="instructor-panel">
             <div id="stickman-anim" class="stickman">
                 <div class="stickman-legs"><div class="leg-l"></div><div class="leg-r"></div></div>
@@ -210,7 +222,68 @@
     <script src="Script.js"></script>
     <script src="Routines.js"></script>
 
-    <!-- Logic -->
+    <!-- MUSIC MANAGER SCRIPT -->
+    <script>
+        class MusicManager {
+            constructor() {
+                this.isPlaying = false;
+                this.currentTrack = null;
+                this.audioElement = new Audio();
+                this.audioElement.loop = true;
+                
+                // 3 Songs: Slow (Lofi), Mid (Pop), Fast (Phonk/Electronic)
+                // Using generic reliable CDN placeholders. 
+                // Replace these URLs with local files if preferred (e.g., 'music/slow.mp3')
+                this.songs = {
+                    slow: "https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3", // Chill Lofi
+                    mid:  "https://cdn.pixabay.com/audio/2024/01/16/audio_e2b992254f.mp3", // Upbeat Pop
+                    fast: "https://cdn.pixabay.com/audio/2023/09/06/audio_37035f2998.mp3"  // Fast Phonk
+                };
+            }
+
+            toggle() {
+                this.isPlaying = !this.isPlaying;
+                const btn = document.getElementById('music-toggle');
+                
+                if (this.isPlaying) {
+                    btn.innerHTML = "🎵 On";
+                    btn.classList.add('playing');
+                    this.playCurrent();
+                } else {
+                    btn.innerHTML = "🎵 Off";
+                    btn.classList.remove('playing');
+                    this.audioElement.pause();
+                }
+            }
+
+            // Called when speed changes
+            setSpeed(speedType) { // 'slow', 'mid', 'fast'
+                if (this.currentTrack === speedType) return;
+                
+                this.currentTrack = speedType;
+                
+                // Smooth transition if already playing
+                if (this.isPlaying) {
+                    this.playCurrent();
+                }
+            }
+
+            playCurrent() {
+                if (!this.currentTrack) this.currentTrack = 'mid'; // Default
+                const url = this.songs[this.currentTrack];
+                
+                if (this.audioElement.src !== url) {
+                    this.audioElement.src = url;
+                    this.audioElement.play().catch(e => console.log("Audio play blocked until interaction"));
+                } else {
+                    this.audioElement.play();
+                }
+            }
+        }
+        window.musicManager = new MusicManager();
+    </script>
+
+    <!-- Logic Glue -->
     <script>
         function toggleSidebar() { document.getElementById('exercise-sidebar').classList.toggle('active'); }
 
@@ -247,9 +320,7 @@
         function startRoutineUI(planId, btn) {
             setActiveBtn(btn);
             document.getElementById('speed-controls').style.display = 'none';
-            // Hide selection menu for routines
             document.getElementById('exercise-sidebar').classList.remove('active');
-            
             if(window.routineManager) window.routineManager.start(planId);
         }
 
@@ -257,11 +328,12 @@
             setActiveBtn(btn);
             document.getElementById('speed-controls').style.display = 'flex';
             document.getElementById('exercise-sidebar').classList.add('active'); // Open Menu
-            
             if(window.routineManager) window.routineManager.active = false;
-            
             updateHeader("Free Mode: Select");
             window.updateHint("Select an exercise");
+            
+            // Set Default Music to Mid
+            if(window.musicManager) window.musicManager.setSpeed('mid');
         }
 
         function selectFreeExercise(modeName, listEl) {
@@ -280,6 +352,13 @@
             btn.classList.add('active');
             currentFreeSpeed = seconds;
             triggerFreePacer();
+
+            // Update Music
+            if (window.musicManager) {
+                if (seconds >= 3) window.musicManager.setSpeed('slow');
+                else if (seconds <= 1.5) window.musicManager.setSpeed('fast');
+                else window.musicManager.setSpeed('mid');
+            }
         }
 
         function triggerFreePacer() {
