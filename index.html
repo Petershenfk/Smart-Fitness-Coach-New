@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Magic Mirror - Your Personal Fitness Coach</title>
     <style>
-        /* --- Modern CSS Variables --- */
+        /* --- CSS Variables --- */
         :root {
             --font-stack: "Hilton Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             --primary-color: #2979FF;
@@ -14,7 +14,7 @@
             --success-color: #00E676;
             --loading-color: #FFEA00;
             --bg-color: #0F1115;
-            --surface-glass: rgba(20, 24, 30, 0.9);
+            --surface-glass: rgba(20, 24, 30, 0.95);
             --surface-border: rgba(255, 255, 255, 0.15);
             --text-main: #FFFFFF;
             --radius-lg: 24px;
@@ -22,241 +22,106 @@
         }
 
         body {
-            margin: 0; padding: 0; 
-            background-color: var(--bg-color); 
-            color: var(--text-main);
-            font-family: var(--font-stack); 
-            height: 100dvh; /* Dynamic Height for Mobile Browsers */
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden;
+            margin: 0; padding: 0; background-color: var(--bg-color); color: var(--text-main);
+            font-family: var(--font-stack); height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
         }
 
         /* --- Header --- */
-        header { 
-            flex: 0 0 auto; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            padding: 10px 16px; 
-            z-index: 20; 
-            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); 
-            height: 50px;
-        }
-        
-        h1 { 
-            margin: 0; 
-            font-size: 1.1rem; 
-            font-weight: 700; 
-            background: linear-gradient(90deg, #fff, #81D4FA); 
-            -webkit-background-clip: text; 
-            -webkit-text-fill-color: transparent; 
-        }
-        
+        header { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; z-index: 20; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); height: 50px; }
+        h1 { margin: 0; font-size: 1.1rem; font-weight: 700; background: linear-gradient(90deg, #fff, #81D4FA); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         #status-text { font-size: 0.7rem; color: var(--primary-color); font-weight: 600; text-transform: uppercase; margin-top: 2px; }
-        
         .header-actions { display: flex; align-items: center; gap: 8px; }
-        
-        .ai-status-pill { 
-            display: flex; align-items: center; gap: 5px; 
-            background: rgba(255, 255, 255, 0.1); padding: 4px 10px; 
-            border-radius: 20px; font-size: 0.7rem; font-weight: 600; 
-            border: 1px solid var(--surface-border); backdrop-filter: blur(4px); 
-        }
+        .ai-status-pill { display: flex; align-items: center; gap: 5px; background: rgba(255, 255, 255, 0.1); padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; border: 1px solid var(--surface-border); backdrop-filter: blur(4px); }
         .status-dot { width: 6px; height: 6px; border-radius: 50%; background-color: var(--loading-color); }
         .status-green .status-dot { background-color: var(--success-color); box-shadow: 0 0 5px var(--success-color); }
+        /* Note: Menu toggle button is hidden in Free Mode logic */
         
-        #menu-toggle { 
-            background: rgba(255, 255, 255, 0.15); border: 1px solid var(--surface-border); 
-            color: white; padding: 6px 12px; font-size: 0.75rem; border-radius: 20px; font-weight: 500; 
-        }
-
-        /* --- Video Area (The crucial fix for mobile) --- */
+        /* --- Video Area --- */
         #canvas-wrapper {
-            flex: 1; 
-            position: relative; 
-            width: 100%; 
-            min-height: 0; /* Important: Allows flex child to shrink below content size */
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            background: #000; 
-            overflow: hidden;
+            flex: 1; position: relative; width: 100%; min-height: 0;
+            display: flex; justify-content: center; align-items: center; 
+            background: #000; overflow: hidden;
         }
-
-        /* Desktop: Add frame */
         @media (min-width: 768px) { 
-            #canvas-wrapper { 
-                width: 95%; 
-                border-radius: var(--radius-lg); 
-                margin: 0 auto 10px auto; 
-                border: 1px solid var(--surface-border); 
-            } 
+            #canvas-wrapper { width: 95%; border-radius: var(--radius-lg); margin: 0 auto 10px auto; border: 1px solid var(--surface-border); } 
         }
-
-        #video, #output { 
-            position: absolute; 
-            width: 100%; 
-            height: 100%; 
-            /* CONTAIN: Ensures the full body is visible on portrait screens without cropping */
-            object-fit: contain; 
-            transform: scaleX(-1); 
-        }
-        
+        #video, #output { position: absolute; width: 100%; height: 100%; object-fit: contain; transform: scaleX(-1); }
         #output { z-index: 10; }
+
+        /* --- Instructor (Stickman) --- */
+        #instructor-panel {
+            position: absolute; top: 20px; right: 20px; width: 60px; height: 100px;
+            background: rgba(0, 0, 0, 0.5); border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);
+            display: flex; justify-content: center; align-items: flex-end; padding-bottom: 10px;
+            z-index: 45; pointer-events: none; transition: opacity 0.3s;
+        }
+        .stickman { width: 4px; height: 35px; background: white; position: relative; animation-duration: 2s; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
+        .stickman::before { content: ''; position: absolute; top: -12px; left: -5px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-sizing: border-box; }
+        .stickman::after { content: ''; position: absolute; top: 5px; left: -10px; width: 24px; height: 2px; background: white; }
+        .stickman-legs { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; }
+        .leg-l, .leg-r { position: absolute; bottom: -18px; width: 4px; height: 20px; background: white; transform-origin: top center; }
+        .leg-l { transform: rotate(15deg); left: -4px; } .leg-r { transform: rotate(-15deg); left: 4px; }
+
+        /* Animations */
+        .anim-squat .stickman { animation-name: squatBody; }
+        .anim-squat .leg-l { animation-name: squatLegL; animation-duration: 2s; animation-iteration-count: infinite; }
+        .anim-squat .leg-r { animation-name: squatLegR; animation-duration: 2s; animation-iteration-count: infinite; }
+        @keyframes squatBody { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(15px); } }
+        @keyframes squatLegL { 0%, 100% { transform: rotate(15deg) scaleY(1); } 50% { transform: rotate(-30deg) scaleY(0.5); } }
+        @keyframes squatLegR { 0%, 100% { transform: rotate(-15deg) scaleY(1); } 50% { transform: rotate(30deg) scaleY(0.5); } }
+
+        .anim-jumpingjack .stickman { animation-name: jackBody; animation-duration: 1s; }
+        .anim-jumpingjack::after { animation-name: jackArms; animation-duration: 1s; animation-iteration-count: infinite; }
+        .anim-jumpingjack .leg-l { animation-name: jackLegL; animation-duration: 1s; animation-iteration-count: infinite; }
+        .anim-jumpingjack .leg-r { animation-name: jackLegR; animation-duration: 1s; animation-iteration-count: infinite; }
+        @keyframes jackBody { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        @keyframes jackArms { 0%, 100% { transform: scaleX(1); top: 5px; } 50% { transform: scaleX(0.5) translateY(-15px) rotate(180deg); top: -5px; } }
+        @keyframes jackLegL { 0%, 100% { transform: rotate(5deg); } 50% { transform: rotate(25deg); } }
+        @keyframes jackLegR { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(-25deg); } }
+        
+        .anim-pushup { transform: rotate(90deg) translateY(-10px); }
+        .anim-pushup .stickman { animation-name: pushupBody; }
+        .anim-pushup::after { top: 10px; } 
+        @keyframes pushupBody { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(10px); } }
 
         /* --- Guidance Hint --- */
         #guidance-overlay {
-            position: absolute; 
-            top: 20px; /* Moved up to avoid blocking center view */
-            left: 50%; 
-            transform: translate(-50%, -20px);
-            background: rgba(255, 23, 68, 0.9); 
-            backdrop-filter: blur(8px); 
-            color: white;
-            padding: 8px 20px; 
-            border-radius: 30px; 
-            font-size: 0.9rem; 
-            font-weight: 700;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3); 
-            z-index: 50; 
-            opacity: 0; 
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); 
-            pointer-events: none;
-            white-space: nowrap;
+            position: absolute; top: 20px; left: 50%; transform: translate(-50%, -20px);
+            background: rgba(255, 23, 68, 0.9); backdrop-filter: blur(8px); color: white;
+            padding: 8px 20px; border-radius: 30px; font-size: 0.9rem; font-weight: 700;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 50; opacity: 0; pointer-events: none; transition: all 0.3s; white-space: nowrap;
         }
         #guidance-overlay.active { opacity: 1; transform: translate(-50%, 0); }
 
-        /* --- Pacer Visuals --- */
-        #pacer-container {
-            position: absolute; 
-            left: 10px; /* Closer to edge for mobile */
-            top: 15%; 
-            bottom: 15%; 
-            width: 6px;
-            background: rgba(255, 255, 255, 0.15); 
-            border-radius: 10px; 
-            z-index: 40;
-            pointer-events: none; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: flex-end;
-            transition: opacity 0.3s;
-        }
+        /* --- Pacer --- */
+        #pacer-container { position: absolute; left: 10px; top: 15%; bottom: 15%; width: 6px; background: rgba(255,255,255,0.15); border-radius: 10px; z-index: 40; pointer-events: none; }
         #pacer-container.hidden { opacity: 0; }
-
-        #pacer-bar {
-            width: 100%; 
-            height: 15%; 
-            background: var(--primary-color); 
-            border-radius: 10px;
-            box-shadow: 0 0 15px var(--primary-color); 
-            position: absolute; 
-            bottom: 0;
-            animation: pacerMove var(--tempo, 2s) infinite ease-in-out;
-        }
-        
-        @keyframes pacerMove {
-            0% { bottom: 0%; background: var(--primary-color); box-shadow: 0 0 15px var(--primary-color); }
-            50% { bottom: 85%; background: var(--secondary-color); box-shadow: 0 0 25px var(--secondary-color); }
-            100% { bottom: 0%; background: var(--primary-color); box-shadow: 0 0 15px var(--primary-color); }
-        }
+        #pacer-bar { width: 100%; height: 15%; background: var(--primary-color); border-radius: 10px; box-shadow: 0 0 15px var(--primary-color); position: absolute; bottom: 0; animation: pacerMove var(--tempo, 2s) infinite ease-in-out; }
+        @keyframes pacerMove { 0%, 100% { bottom: 0%; } 50% { bottom: 85%; } }
 
         /* --- Controls --- */
-        #controls-container {
-            flex: 0 0 auto;
-            width: 100%;
-            z-index: 30;
-            background: linear-gradient(to top, rgba(0,0,0,1) 30%, transparent);
-            padding-bottom: max(20px, env(safe-area-inset-bottom)); /* iOS Safe Area */
-            padding-top: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* Speed Options */
-        #speed-controls {
-            display: none; 
-            gap: 8px;
-            background: rgba(255,255,255,0.1);
-            padding: 4px;
-            border-radius: 30px;
-            backdrop-filter: blur(10px);
-            margin-bottom: 5px;
-            animation: slideUp 0.3s ease-out;
-        }
+        #controls-container { flex: 0 0 auto; width: 100%; z-index: 30; background: linear-gradient(to top, rgba(0,0,0,1) 30%, transparent); padding-bottom: max(20px, env(safe-area-inset-bottom)); padding-top: 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        
+        #speed-controls { display: none; gap: 8px; background: rgba(255,255,255,0.1); padding: 4px; border-radius: 30px; backdrop-filter: blur(10px); margin-bottom: 5px; animation: slideUp 0.3s ease-out; }
         @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .speed-btn { background: transparent; border: none; color: #aaa; padding: 8px 16px; font-size: 0.75rem; font-weight: 700; border-radius: 20px; }
+        .speed-btn.active { background: var(--primary-color); color: white; }
 
-        .speed-btn {
-            background: transparent; border: none; color: #aaa;
-            padding: 8px 16px; font-size: 0.75rem; font-weight: 700; border-radius: 20px;
-        }
-        .speed-btn.active { background: var(--primary-color); color: white; box-shadow: 0 2px 10px rgba(41, 121, 255, 0.4); }
-
-        /* Main Buttons Grid */
-        #main-controls {
-            display: grid; 
-            grid-template-columns: repeat(4, 1fr); 
-            gap: 8px;
-            width: 100%; 
-            max-width: 600px; 
-            padding: 0 12px; 
-            box-sizing: border-box;
-        }
-
-        button.mode-btn {
-            background: var(--surface-glass); 
-            backdrop-filter: blur(12px); 
-            border: 1px solid var(--surface-border);
-            color: var(--text-main); 
-            padding: 12px 0; 
-            border-radius: 12px; 
-            font-size: 0.7rem; 
-            font-weight: 700;
-            cursor: pointer; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 2px;
-            transition: transform 0.1s, background 0.2s;
-            touch-action: manipulation;
-        }
-        button.mode-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
-        button.mode-btn span.sub { font-size: 0.6rem; color: #bbb; font-weight: 400; }
-        
-        button.mode-btn.active-mode {
-            border-color: var(--primary-color);
-            background: rgba(41, 121, 255, 0.25);
-            color: white;
-            box-shadow: 0 0 15px rgba(41, 121, 255, 0.15);
-        }
-        
+        #main-controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; max-width: 600px; padding: 0 12px; box-sizing: border-box; }
+        button.mode-btn { background: var(--surface-glass); backdrop-filter: blur(12px); border: 1px solid var(--surface-border); color: var(--text-main); padding: 12px 0; border-radius: 12px; font-size: 0.7rem; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+        button.mode-btn:active { transform: scale(0.95); }
+        button.mode-btn.active-mode { border-color: var(--primary-color); background: rgba(41, 121, 255, 0.25); color: white; }
         button.primary-btn { background: var(--primary-color); border: none; color: white; }
 
-        /* --- Sidebar --- */
-        #exercise-sidebar { 
-            position: absolute; top: 0; right: 0; bottom: 0; 
-            width: 85%; /* Mobile Friendly Width */
-            max-width: 320px; 
-            background: rgba(15, 17, 21, 0.98); 
-            backdrop-filter: blur(16px); 
-            z-index: 100; 
-            transform: translateX(100%); 
-            transition: transform 0.3s ease; 
-            display: flex; flex-direction: column; 
-            border-left: 1px solid var(--surface-border); 
-            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
-        }
+        /* --- Sidebar (Now Selection Menu) --- */
+        #exercise-sidebar { position: absolute; top: 0; right: 0; bottom: 0; width: 85%; max-width: 320px; background: rgba(15, 17, 21, 0.98); backdrop-filter: blur(16px); z-index: 100; transform: translateX(100%); transition: transform 0.3s ease; display: flex; flex-direction: column; border-left: 1px solid var(--surface-border); box-shadow: -10px 0 30px rgba(0,0,0,0.5); }
         #exercise-sidebar.active { transform: translateX(0); }
         .sidebar-header { padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--surface-border); }
         .sidebar-content { overflow-y: auto; flex: 1; padding: 20px; }
-        ul { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        li { padding: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; font-size: 0.85rem; text-align: center; color: #eee; }
         h3 { color: var(--primary-color); font-size: 0.75rem; text-transform: uppercase; margin: 24px 0 12px; letter-spacing: 1px; }
-
+        ul { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .selectable-item { padding: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; font-size: 0.85rem; text-align: center; color: #eee; cursor: pointer; border: 1px solid transparent; }
+        .selectable-item.selected { border-color: var(--primary-color); background: rgba(41, 121, 255, 0.2); color: white; }
     </style>
     
     <!-- TensorFlow.js Dependencies -->
@@ -274,7 +139,7 @@
         </div>
         <div class="header-actions">
             <div id="ai-pill" class="ai-status-pill status-yellow"><div class="status-dot"></div><span>AI</span></div>
-            <button id="menu-toggle" onclick="toggleSidebar()">Library</button>
+            <!-- Menu toggle removed, automatic via Free Mode -->
         </div>
     </header>
 
@@ -283,15 +148,19 @@
         <canvas id="output"></canvas>
         <div id="guidance-overlay">Too Close!</div>
 
-        <!-- Pacer Visual -->
-        <div id="pacer-container" class="hidden">
-            <div id="pacer-bar"></div>
+        <!-- Pacer -->
+        <div id="pacer-container" class="hidden"><div id="pacer-bar"></div></div>
+
+        <!-- NEW: Gesture Instructor -->
+        <div id="instructor-panel">
+            <div id="stickman-anim" class="stickman">
+                <div class="stickman-legs"><div class="leg-l"></div><div class="leg-r"></div></div>
+            </div>
         </div>
     </div>
 
     <div id="controls-container">
-        
-        <!-- Speed Options (Only for Free Workout) -->
+        <!-- Speed Options -->
         <div id="speed-controls">
             <button class="speed-btn" onclick="setFreeSpeed(4, this)">SLOW</button>
             <button class="speed-btn active" onclick="setFreeSpeed(2.5, this)">MID</button>
@@ -300,47 +169,52 @@
 
         <!-- Main Buttons -->
         <div id="main-controls">
-            <button class="mode-btn" onclick="startRoutineUI('upperBody', this)">
-                Upper<span class="sub">10m</span>
-            </button>
-            <button class="mode-btn" onclick="startRoutineUI('lowerBody', this)">
-                Lower<span class="sub">10m</span>
-            </button>
-            <button class="mode-btn" onclick="startRoutineUI('fullBody', this)">
-                Full<span class="sub">HIIT</span>
-            </button>
-            <button class="mode-btn primary-btn" onclick="startFreeWorkoutUI(this)">
-                FREE<span class="sub">Flex</span>
-            </button>
+            <button class="mode-btn" onclick="startRoutineUI('upperBody', this)">Upper<span class="sub">10m</span></button>
+            <button class="mode-btn" onclick="startRoutineUI('lowerBody', this)">Lower<span class="sub">10m</span></button>
+            <button class="mode-btn" onclick="startRoutineUI('fullBody', this)">Full<span class="sub">HIIT</span></button>
+            <button class="mode-btn primary-btn" onclick="startFreeWorkoutUI(this)">FREE<span class="sub">Flex</span></button>
         </div>
     </div>
 
-    <!-- Sidebar -->
+    <!-- Sidebar: Selection Menu -->
     <div id="exercise-sidebar">
         <div class="sidebar-header">
-            <h2>Exercises</h2>
+            <h2>Select Exercise</h2>
             <button class="close-btn" style="background:none;border:none;color:white;font-size:1.5rem;" onclick="toggleSidebar()">✕</button>
         </div>
         <div class="sidebar-content">
-            <h3>Strength</h3>
-            <ul><li>Squat</li><li>Push-up</li><li>Lunge</li><li>Dip</li></ul>
+            <h3>Lower Body</h3>
+            <ul>
+                <li class="selectable-item" onclick="selectFreeExercise('squat', this)">Squat</li>
+                <li class="selectable-item" onclick="selectFreeExercise('lunge', this)">Lunge</li>
+                <li class="selectable-item" onclick="selectFreeExercise('calfraise', this)">Calf Raise</li>
+                <li class="selectable-item" onclick="selectFreeExercise('glutebridge', this)">Hip Raise</li>
+            </ul>
+            <h3>Upper Body</h3>
+            <ul>
+                <li class="selectable-item" onclick="selectFreeExercise('pushup', this)">Push Up</li>
+                <li class="selectable-item" onclick="selectFreeExercise('dip', this)">Tricep Dip</li>
+            </ul>
             <h3>Cardio</h3>
-            <ul><li>Jumping Jack</li><li>High Knees</li><li>Burpee</li></ul>
+            <ul>
+                <li class="selectable-item" onclick="selectFreeExercise('jumpingjack', this)">Jumping Jack</li>
+                <li class="selectable-item" onclick="selectFreeExercise('highknees', this)">Run in Place</li>
+                <li class="selectable-item" onclick="selectFreeExercise('burpee', this)">Burpee</li>
+            </ul>
         </div>
     </div>
 
     <!-- Scripts -->
-    <!-- Ensure these files exist in your directory -->
     <script src="Pacer.js"></script>
     <script src="Exercise.js"></script>
     <script src="Script.js"></script>
     <script src="Routines.js"></script>
 
-    <!-- UI Logic -->
+    <!-- Logic -->
     <script>
         function toggleSidebar() { document.getElementById('exercise-sidebar').classList.toggle('active'); }
 
-        // Mirror Text Patch
+        // Mirror Text Fix
         (function() {
             const originalFillText = CanvasRenderingContext2D.prototype.fillText;
             CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
@@ -349,9 +223,21 @@
             };
         })();
 
-        // --- UI Interactions ---
+        // --- INSTRUCTOR LOGIC ---
+        function updateInstructor(exerciseName) {
+            const stickman = document.getElementById('stickman-anim');
+            const panel = document.getElementById('instructor-panel');
+            panel.className = ''; // Reset
+            const name = exerciseName.toLowerCase();
 
-        let currentFreeSpeed = 2.5; // Default Mid
+            if (name.includes('squat') || name.includes('sit') || name.includes('raise')) panel.classList.add('anim-squat');
+            else if (name.includes('jump') || name.includes('jack') || name.includes('run') || name.includes('burpee')) panel.classList.add('anim-jumpingjack');
+            else if (name.includes('push') || name.includes('plank')) panel.classList.add('anim-pushup');
+            else panel.classList.add('anim-squat'); 
+        }
+
+        // --- UI Interactions ---
+        let currentFreeSpeed = 2.5;
 
         function setActiveBtn(btn) {
             document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active-mode'));
@@ -361,20 +247,32 @@
         function startRoutineUI(planId, btn) {
             setActiveBtn(btn);
             document.getElementById('speed-controls').style.display = 'none';
+            // Hide selection menu for routines
+            document.getElementById('exercise-sidebar').classList.remove('active');
+            
             if(window.routineManager) window.routineManager.start(planId);
         }
 
         function startFreeWorkoutUI(btn) {
             setActiveBtn(btn);
             document.getElementById('speed-controls').style.display = 'flex';
+            document.getElementById('exercise-sidebar').classList.add('active'); // Open Menu
+            
             if(window.routineManager) window.routineManager.active = false;
             
-            // Default to Squat for Free Mode
-            if(window.startMode) window.startMode('squat');
+            updateHeader("Free Mode: Select");
+            window.updateHint("Select an exercise");
+        }
+
+        function selectFreeExercise(modeName, listEl) {
+            document.querySelectorAll('.selectable-item').forEach(el => el.classList.remove('selected'));
+            if(listEl) listEl.classList.add('selected');
+
+            if(window.startMode) window.startMode(modeName);
             
+            updateHeader("Free Mode: " + listEl.innerText);
+            window.updateHint("Get Ready!");
             triggerFreePacer();
-            updateHeader("Free Workout");
-            window.updateHint("Free Mode: Squats");
         }
 
         function setFreeSpeed(seconds, btn) {
@@ -385,16 +283,11 @@
         }
 
         function triggerFreePacer() {
-            if(window.pacer) {
-                window.pacer.start(currentFreeSpeed, 'strength');
-            }
+            if(window.pacer) window.pacer.start(currentFreeSpeed, 'strength');
         }
 
-        function updateHeader(text) {
-            document.getElementById('status-text').innerText = text;
-        }
+        function updateHeader(text) { document.getElementById('status-text').innerText = text; }
 
-        // Global Helpers
         window.updateHint = function(message) {
             const el = document.getElementById('guidance-overlay');
             if (message) { el.innerText = message; el.classList.add('active'); } 
@@ -405,17 +298,19 @@
             const pill = document.getElementById('ai-pill');
             const txt = document.getElementById('status-text');
             pill.classList.remove('status-red', 'status-yellow', 'status-green');
-            
-            if (state === 'green') { 
-                pill.classList.add('status-green'); 
-                if (!document.querySelector('.active-mode')) txt.innerText = "Ready"; 
-            } else if (state === 'red') { 
-                pill.classList.add('status-red'); txt.innerText = "Offline"; 
-            } else { 
-                pill.classList.add('status-yellow'); txt.innerText = "Loading..."; 
-            }
+            if (state === 'green') { pill.classList.add('status-green'); if(!document.querySelector('.active-mode')) txt.innerText = "Ready"; }
+            else if (state === 'red') { pill.classList.add('status-red'); txt.innerText = "Offline"; }
+            else { pill.classList.add('status-yellow'); txt.innerText = "Loading..."; }
         };
+
+        // Hook startMode to update instructor
+        const originalStartMode = window.startMode;
+        if(originalStartMode) {
+            window.startMode = function(modeName) {
+                originalStartMode(modeName);
+                updateInstructor(modeName);
+            }
+        }
     </script>
 </body>
 </html>
-
