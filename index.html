@@ -18,7 +18,6 @@
             --surface-border: rgba(255, 255, 255, 0.15);
             --text-main: #FFFFFF;
             --radius-lg: 24px;
-            --radius-md: 16px;
         }
 
         body {
@@ -30,67 +29,27 @@
         header { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; z-index: 20; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); height: 50px; }
         h1 { margin: 0; font-size: 1.1rem; font-weight: 700; background: linear-gradient(90deg, #fff, #81D4FA); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         #status-text { font-size: 0.7rem; color: var(--primary-color); font-weight: 600; text-transform: uppercase; margin-top: 2px; }
-        
         .header-actions { display: flex; align-items: center; gap: 8px; }
-        .ai-status-pill { display: flex; align-items: center; gap: 5px; background: rgba(255, 255, 255, 0.1); padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; border: 1px solid var(--surface-border); backdrop-filter: blur(4px); }
-        .status-dot { width: 6px; height: 6px; border-radius: 50%; background-color: var(--loading-color); }
-        .status-green .status-dot { background-color: var(--success-color); box-shadow: 0 0 5px var(--success-color); }
         
-        /* Music Button */
         #music-toggle {
             background: rgba(255, 255, 255, 0.1); border: 1px solid var(--surface-border);
             color: #ccc; padding: 6px 12px; font-size: 1rem; border-radius: 20px; 
             cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 5px;
         }
         #music-toggle.playing { color: var(--success-color); border-color: var(--success-color); background: rgba(0, 230, 118, 0.1); }
-        
+        .ai-status-pill { display: flex; align-items: center; gap: 5px; background: rgba(255, 255, 255, 0.1); padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; border: 1px solid var(--surface-border); backdrop-filter: blur(4px); }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; background-color: var(--loading-color); }
+        .status-green .status-dot { background-color: var(--success-color); box-shadow: 0 0 5px var(--success-color); }
+
         /* --- Video Area --- */
         #canvas-wrapper {
             flex: 1; position: relative; width: 100%; min-height: 0;
             display: flex; justify-content: center; align-items: center; 
             background: #000; overflow: hidden;
         }
-        @media (min-width: 768px) { 
-            #canvas-wrapper { width: 95%; border-radius: var(--radius-lg); margin: 0 auto 10px auto; border: 1px solid var(--surface-border); } 
-        }
+        @media (min-width: 768px) { #canvas-wrapper { width: 95%; border-radius: var(--radius-lg); margin: 0 auto 10px auto; border: 1px solid var(--surface-border); } }
         #video, #output { position: absolute; width: 100%; height: 100%; object-fit: contain; transform: scaleX(-1); }
         #output { z-index: 10; }
-
-        /* --- Instructor (Stickman) --- */
-        #instructor-panel {
-            position: absolute; top: 20px; right: 20px; width: 60px; height: 100px;
-            background: rgba(0, 0, 0, 0.5); border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);
-            display: flex; justify-content: center; align-items: flex-end; padding-bottom: 10px;
-            z-index: 45; pointer-events: none; transition: opacity 0.3s;
-        }
-        .stickman { width: 4px; height: 35px; background: white; position: relative; animation-duration: 2s; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
-        .stickman::before { content: ''; position: absolute; top: -12px; left: -5px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-sizing: border-box; }
-        .stickman::after { content: ''; position: absolute; top: 5px; left: -10px; width: 24px; height: 2px; background: white; }
-        .stickman-legs { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; }
-        .leg-l, .leg-r { position: absolute; bottom: -18px; width: 4px; height: 20px; background: white; transform-origin: top center; }
-        .leg-l { transform: rotate(15deg); left: -4px; } .leg-r { transform: rotate(-15deg); left: 4px; }
-
-        /* Animations */
-        .anim-squat .stickman { animation-name: squatBody; }
-        .anim-squat .leg-l { animation-name: squatLegL; animation-duration: 2s; animation-iteration-count: infinite; }
-        .anim-squat .leg-r { animation-name: squatLegR; animation-duration: 2s; animation-iteration-count: infinite; }
-        @keyframes squatBody { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(15px); } }
-        @keyframes squatLegL { 0%, 100% { transform: rotate(15deg) scaleY(1); } 50% { transform: rotate(-30deg) scaleY(0.5); } }
-        @keyframes squatLegR { 0%, 100% { transform: rotate(-15deg) scaleY(1); } 50% { transform: rotate(30deg) scaleY(0.5); } }
-
-        .anim-jumpingjack .stickman { animation-name: jackBody; animation-duration: 1s; }
-        .anim-jumpingjack::after { animation-name: jackArms; animation-duration: 1s; animation-iteration-count: infinite; }
-        .anim-jumpingjack .leg-l { animation-name: jackLegL; animation-duration: 1s; animation-iteration-count: infinite; }
-        .anim-jumpingjack .leg-r { animation-name: jackLegR; animation-duration: 1s; animation-iteration-count: infinite; }
-        @keyframes jackBody { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-        @keyframes jackArms { 0%, 100% { transform: scaleX(1); top: 5px; } 50% { transform: scaleX(0.5) translateY(-15px) rotate(180deg); top: -5px; } }
-        @keyframes jackLegL { 0%, 100% { transform: rotate(5deg); } 50% { transform: rotate(25deg); } }
-        @keyframes jackLegR { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(-25deg); } }
-        
-        .anim-pushup { transform: rotate(90deg) translateY(-10px); }
-        .anim-pushup .stickman { animation-name: pushupBody; }
-        .anim-pushup::after { top: 10px; } 
-        @keyframes pushupBody { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(10px); } }
 
         /* --- Guidance Hint --- */
         #guidance-overlay {
@@ -107,6 +66,22 @@
         #pacer-bar { width: 100%; height: 15%; background: var(--primary-color); border-radius: 10px; box-shadow: 0 0 15px var(--primary-color); position: absolute; bottom: 0; animation: pacerMove var(--tempo, 2s) infinite ease-in-out; }
         @keyframes pacerMove { 0%, 100% { bottom: 0%; } 50% { bottom: 85%; } }
 
+        /* --- NEW: GIF INSTRUCTOR --- */
+        #instructor-panel {
+            position: absolute; top: 20px; right: 20px; width: 100px; height: 100px;
+            background: rgba(255, 255, 255, 0.9); border-radius: 12px;
+            border: 2px solid var(--primary-color);
+            z-index: 45; overflow: hidden;
+            display: none; /* Hidden by default until move starts */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        #instructor-panel.active { display: block; animation: popIn 0.3s; }
+        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+        
+        #instructor-gif {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+
         /* --- Controls --- */
         #controls-container { flex: 0 0 auto; width: 100%; z-index: 30; background: linear-gradient(to top, rgba(0,0,0,1) 30%, transparent); padding-bottom: max(20px, env(safe-area-inset-bottom)); padding-top: 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
         
@@ -121,7 +96,7 @@
         button.mode-btn.active-mode { border-color: var(--primary-color); background: rgba(41, 121, 255, 0.25); color: white; }
         button.primary-btn { background: var(--primary-color); border: none; color: white; }
 
-        /* --- Sidebar (Now Selection Menu) --- */
+        /* --- Sidebar --- */
         #exercise-sidebar { position: absolute; top: 0; right: 0; bottom: 0; width: 85%; max-width: 320px; background: rgba(15, 17, 21, 0.98); backdrop-filter: blur(16px); z-index: 100; transform: translateX(100%); transition: transform 0.3s ease; display: flex; flex-direction: column; border-left: 1px solid var(--surface-border); box-shadow: -10px 0 30px rgba(0,0,0,0.5); }
         #exercise-sidebar.active { transform: translateX(0); }
         .sidebar-header { padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--surface-border); }
@@ -132,7 +107,7 @@
         .selectable-item.selected { border-color: var(--primary-color); background: rgba(41, 121, 255, 0.2); color: white; }
     </style>
     
-    <!-- TensorFlow.js Dependencies -->
+    <!-- Dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
@@ -146,16 +121,12 @@
             <div id="status-text">Ready</div>
         </div>
         <div class="header-actions">
-            <!-- Music Toggle -->
-            <button id="music-toggle" onclick="window.musicManager.toggle()">
-                🎵 Off
-            </button>
+            <button id="music-toggle" onclick="window.musicManager.toggle()">🎵 Off</button>
             <div id="ai-pill" class="ai-status-pill status-yellow"><div class="status-dot"></div><span>AI</span></div>
         </div>
     </header>
 
     <div id="canvas-wrapper">
-        <!-- Autoplay and Muted required for mobile -->
         <video id="video" playsinline muted autoplay></video>
         <canvas id="output"></canvas>
         <div id="guidance-overlay">Too Close!</div>
@@ -163,11 +134,10 @@
         <!-- Pacer -->
         <div id="pacer-container" class="hidden"><div id="pacer-bar"></div></div>
 
-        <!-- Gesture Instructor -->
+        <!-- NEW: GIF INSTRUCTOR -->
         <div id="instructor-panel">
-            <div id="stickman-anim" class="stickman">
-                <div class="stickman-legs"><div class="leg-l"></div><div class="leg-r"></div></div>
-            </div>
+            <!-- Using placeholder images. REPLACE 'src' with local GIF files later! -->
+            <img id="instructor-gif" src="https://via.placeholder.com/100x100.png?text=Coach" alt="Instructor">
         </div>
     </div>
 
@@ -199,19 +169,11 @@
             <ul>
                 <li class="selectable-item" onclick="selectFreeExercise('squat', this)">Squat</li>
                 <li class="selectable-item" onclick="selectFreeExercise('lunge', this)">Lunge</li>
-                <li class="selectable-item" onclick="selectFreeExercise('calfraise', this)">Calf Raise</li>
-                <li class="selectable-item" onclick="selectFreeExercise('glutebridge', this)">Hip Raise</li>
             </ul>
             <h3>Upper Body</h3>
             <ul>
                 <li class="selectable-item" onclick="selectFreeExercise('pushup', this)">Push Up</li>
                 <li class="selectable-item" onclick="selectFreeExercise('dip', this)">Tricep Dip</li>
-            </ul>
-            <h3>Cardio</h3>
-            <ul>
-                <li class="selectable-item" onclick="selectFreeExercise('jumpingjack', this)">Jumping Jack</li>
-                <li class="selectable-item" onclick="selectFreeExercise('highknees', this)">Run in Place</li>
-                <li class="selectable-item" onclick="selectFreeExercise('burpee', this)">Burpee</li>
             </ul>
         </div>
     </div>
@@ -222,72 +184,54 @@
     <script src="Script.js"></script>
     <script src="Routines.js"></script>
 
-    <!-- MUSIC MANAGER SCRIPT -->
+    <!-- MUSIC MANAGER -->
     <script>
         class MusicManager {
             constructor() {
                 this.isPlaying = false;
-                this.currentTrack = null;
-                this.audioElement = new Audio();
-                this.audioElement.loop = true;
-                
-                // 3 Songs: Slow (Lofi), Mid (Pop), Fast (Phonk/Electronic)
-                // Using generic reliable CDN placeholders. 
-                // Replace these URLs with local files if preferred (e.g., 'music/slow.mp3')
-                this.songs = {
-                    slow: "https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3", // Chill Lofi
-                    mid:  "https://cdn.pixabay.com/audio/2024/01/16/audio_e2b992254f.mp3", // Upbeat Pop
-                    fast: "https://cdn.pixabay.com/audio/2023/09/06/audio_37035f2998.mp3"  // Fast Phonk
+                this.currentType = 'mid';
+                this.audio = new Audio();
+                this.audio.loop = true;
+                this.tracks = {
+                    slow: "https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3",
+                    mid:  "https://cdn.pixabay.com/audio/2024/01/16/audio_e2b992254f.mp3",
+                    fast: "https://cdn.pixabay.com/audio/2023/09/06/audio_37035f2998.mp3"
                 };
             }
-
             toggle() {
-                this.isPlaying = !this.isPlaying;
                 const btn = document.getElementById('music-toggle');
-                
+                this.isPlaying = !this.isPlaying;
                 if (this.isPlaying) {
-                    btn.innerHTML = "🎵 On";
-                    btn.classList.add('playing');
-                    this.playCurrent();
+                    btn.innerHTML = "🎵 On"; btn.classList.add('playing');
+                    this.play(this.currentType);
                 } else {
-                    btn.innerHTML = "🎵 Off";
-                    btn.classList.remove('playing');
-                    this.audioElement.pause();
+                    btn.innerHTML = "🎵 Off"; btn.classList.remove('playing');
+                    this.audio.pause();
                 }
             }
-
-            // Called when speed changes
-            setSpeed(speedType) { // 'slow', 'mid', 'fast'
-                if (this.currentTrack === speedType) return;
-                
-                this.currentTrack = speedType;
-                
-                // Smooth transition if already playing
-                if (this.isPlaying) {
-                    this.playCurrent();
-                }
+            setSpeed(type) {
+                if (this.currentType === type) return;
+                this.currentType = type;
+                if (this.isPlaying) this.play(type);
             }
-
-            playCurrent() {
-                if (!this.currentTrack) this.currentTrack = 'mid'; // Default
-                const url = this.songs[this.currentTrack];
-                
-                if (this.audioElement.src !== url) {
-                    this.audioElement.src = url;
-                    this.audioElement.play().catch(e => console.log("Audio play blocked until interaction"));
+            play(type) {
+                const src = this.tracks[type];
+                if (this.audio.src !== src) {
+                    this.audio.src = src;
+                    this.audio.play().catch(e => console.log("Audio waiting for interaction"));
                 } else {
-                    this.audioElement.play();
+                    this.audio.play();
                 }
             }
         }
         window.musicManager = new MusicManager();
     </script>
 
-    <!-- Logic Glue -->
+    <!-- MAIN UI LOGIC -->
     <script>
         function toggleSidebar() { document.getElementById('exercise-sidebar').classList.toggle('active'); }
 
-        // Mirror Text Fix
+        // Mirror Patch
         (function() {
             const originalFillText = CanvasRenderingContext2D.prototype.fillText;
             CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
@@ -296,22 +240,52 @@
             };
         })();
 
-        // --- INSTRUCTOR LOGIC ---
-        function updateInstructor(exerciseName) {
-            const stickman = document.getElementById('stickman-anim');
+        // --- INSTRUCTOR GIF LOGIC ---
+        function updateInstructor(modeName) {
             const panel = document.getElementById('instructor-panel');
-            panel.className = ''; // Reset
-            const name = exerciseName.toLowerCase();
+            const img = document.getElementById('instructor-gif');
+            const name = modeName.toLowerCase();
 
-            if (name.includes('squat') || name.includes('sit') || name.includes('raise')) panel.classList.add('anim-squat');
-            else if (name.includes('jump') || name.includes('jack') || name.includes('run') || name.includes('burpee')) panel.classList.add('anim-jumpingjack');
-            else if (name.includes('push') || name.includes('plank')) panel.classList.add('anim-pushup');
-            else panel.classList.add('anim-squat'); 
+            panel.classList.add('active');
+
+            // Example Mapping: You should replace the values with "assets/squat.gif" etc.
+            // Using placeholder text for now so you see it changing.
+            let gifSrc = "https://via.placeholder.com/100x100?text=Move";
+            
+            if (name.includes('squat')) gifSrc = "https://via.placeholder.com/100x100/2979FF/FFFFFF?text=Squat+GIF";
+            else if (name.includes('push')) gifSrc = "https://via.placeholder.com/100x100/FF1744/FFFFFF?text=Pushup+GIF";
+            else if (name.includes('jump')) gifSrc = "https://via.placeholder.com/100x100/00E676/FFFFFF?text=Jump+GIF";
+            else gifSrc = "https://via.placeholder.com/100x100/333333/FFFFFF?text=" + modeName;
+
+            img.src = gifSrc;
         }
 
-        // --- UI Interactions ---
-        let currentFreeSpeed = 2.5;
+        // --- ROUTINE & MUSIC SYNC ---
+        
+        // This function patches RoutineManager to trigger music/gifs automatically
+        function hookRoutineManager() {
+            if (!window.routineManager) return;
+            const originalLoad = window.routineManager.loadCurrentExercise.bind(window.routineManager);
+            
+            window.routineManager.loadCurrentExercise = function() {
+                originalLoad(); // Call original
+                
+                // Get current exercise data
+                const current = this.currentPlan.sequence[this.currentIndex];
+                
+                // 1. Update GIF
+                updateInstructor(current.name);
+                
+                // 2. Sync Music based on Tempo
+                if (current.tempo >= 3) window.musicManager.setSpeed('slow');
+                else if (current.tempo <= 1.5) window.musicManager.setSpeed('fast');
+                else window.musicManager.setSpeed('mid');
+            };
+        }
+        // Initialize Hook
+        setTimeout(hookRoutineManager, 1000);
 
+        // --- UI ACTIONS ---
         function setActiveBtn(btn) {
             document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active-mode'));
             if(btn) btn.classList.add('active-mode');
@@ -327,38 +301,33 @@
         function startFreeWorkoutUI(btn) {
             setActiveBtn(btn);
             document.getElementById('speed-controls').style.display = 'flex';
-            document.getElementById('exercise-sidebar').classList.add('active'); // Open Menu
+            document.getElementById('exercise-sidebar').classList.add('active');
             if(window.routineManager) window.routineManager.active = false;
-            updateHeader("Free Mode: Select");
-            window.updateHint("Select an exercise");
             
-            // Set Default Music to Mid
-            if(window.musicManager) window.musicManager.setSpeed('mid');
+            updateHeader("Free Mode: Select");
+            window.musicManager.setSpeed('mid');
         }
 
         function selectFreeExercise(modeName, listEl) {
             document.querySelectorAll('.selectable-item').forEach(el => el.classList.remove('selected'));
             if(listEl) listEl.classList.add('selected');
-
             if(window.startMode) window.startMode(modeName);
             
-            updateHeader("Free Mode: " + listEl.innerText);
-            window.updateHint("Get Ready!");
+            updateHeader(listEl.innerText);
+            updateInstructor(modeName);
             triggerFreePacer();
         }
 
+        let currentFreeSpeed = 2.5;
         function setFreeSpeed(seconds, btn) {
             document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             currentFreeSpeed = seconds;
             triggerFreePacer();
-
-            // Update Music
-            if (window.musicManager) {
-                if (seconds >= 3) window.musicManager.setSpeed('slow');
-                else if (seconds <= 1.5) window.musicManager.setSpeed('fast');
-                else window.musicManager.setSpeed('mid');
-            }
+            
+            if (seconds >= 3) window.musicManager.setSpeed('slow');
+            else if (seconds <= 1.5) window.musicManager.setSpeed('fast');
+            else window.musicManager.setSpeed('mid');
         }
 
         function triggerFreePacer() {
@@ -381,15 +350,6 @@
             else if (state === 'red') { pill.classList.add('status-red'); txt.innerText = "Offline"; }
             else { pill.classList.add('status-yellow'); txt.innerText = "Loading..."; }
         };
-
-        // Hook startMode to update instructor
-        const originalStartMode = window.startMode;
-        if(originalStartMode) {
-            window.startMode = function(modeName) {
-                originalStartMode(modeName);
-                updateInstructor(modeName);
-            }
-        }
     </script>
 </body>
 </html>
