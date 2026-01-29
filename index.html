@@ -18,6 +18,7 @@
             --surface-border: rgba(255, 255, 255, 0.15);
             --text-main: #FFFFFF;
             --radius-lg: 24px;
+            --radius-md: 16px;
         }
 
         body {
@@ -66,13 +67,13 @@
         #pacer-bar { width: 100%; height: 15%; background: var(--primary-color); border-radius: 10px; box-shadow: 0 0 15px var(--primary-color); position: absolute; bottom: 0; animation: pacerMove var(--tempo, 2s) infinite ease-in-out; }
         @keyframes pacerMove { 0%, 100% { bottom: 0%; } 50% { bottom: 85%; } }
 
-        /* --- NEW: GIF INSTRUCTOR --- */
+        /* --- GIF INSTRUCTOR --- */
         #instructor-panel {
             position: absolute; top: 20px; right: 20px; width: 100px; height: 100px;
             background: rgba(255, 255, 255, 0.9); border-radius: 12px;
             border: 2px solid var(--primary-color);
             z-index: 45; overflow: hidden;
-            display: none; /* Hidden by default until move starts */
+            display: none; 
             box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         }
         #instructor-panel.active { display: block; animation: popIn 0.3s; }
@@ -134,9 +135,9 @@
         <!-- Pacer -->
         <div id="pacer-container" class="hidden"><div id="pacer-bar"></div></div>
 
-        <!-- NEW: GIF INSTRUCTOR -->
+        <!-- GIF INSTRUCTOR -->
         <div id="instructor-panel">
-            <!-- Using placeholder images. REPLACE 'src' with local GIF files later! -->
+            <!-- Ensure you have these GIFS in the same folder or update src -->
             <img id="instructor-gif" src="https://via.placeholder.com/100x100.png?text=Coach" alt="Instructor">
         </div>
     </div>
@@ -184,7 +185,7 @@
     <script src="Script.js"></script>
     <script src="Routines.js"></script>
 
-    <!-- MUSIC MANAGER -->
+    <!-- MUSIC MANAGER (LOCAL FILES) -->
     <script>
         class MusicManager {
             constructor() {
@@ -192,10 +193,12 @@
                 this.currentType = 'mid';
                 this.audio = new Audio();
                 this.audio.loop = true;
+                
+                // UPDATED: Referring to LOCAL files in the same directory
                 this.tracks = {
-                    slow: "https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3",
-                    mid:  "https://cdn.pixabay.com/audio/2024/01/16/audio_e2b992254f.mp3",
-                    fast: "https://cdn.pixabay.com/audio/2023/09/06/audio_37035f2998.mp3"
+                    slow: "Slow.mp3",
+                    mid:  "Mid.mp3",
+                    fast: "Fast.mp3"
                 };
             }
             toggle() {
@@ -216,9 +219,9 @@
             }
             play(type) {
                 const src = this.tracks[type];
-                if (this.audio.src !== src) {
+                if (this.audio.src.indexOf(src) === -1) { // Check if src changed
                     this.audio.src = src;
-                    this.audio.play().catch(e => console.log("Audio waiting for interaction"));
+                    this.audio.play().catch(e => console.log("Audio waiting for interaction: ", e));
                 } else {
                     this.audio.play();
                 }
@@ -248,29 +251,25 @@
 
             panel.classList.add('active');
 
-            // Example Mapping: You should replace the values with "assets/squat.gif" etc.
-            // Using placeholder text for now so you see it changing.
-            let gifSrc = "https://via.placeholder.com/100x100?text=Move";
+            // --- GIF MAPPING ---
+            // Ensure these files exist locally or use URLS.
+            let gifSrc = "https://via.placeholder.com/100x100?text=Move"; 
             
-            if (name.includes('squat')) gifSrc = "https://via.placeholder.com/100x100/2979FF/FFFFFF?text=Squat+GIF";
-            else if (name.includes('push')) gifSrc = "https://via.placeholder.com/100x100/FF1744/FFFFFF?text=Pushup+GIF";
-            else if (name.includes('jump')) gifSrc = "https://via.placeholder.com/100x100/00E676/FFFFFF?text=Jump+GIF";
-            else gifSrc = "https://via.placeholder.com/100x100/333333/FFFFFF?text=" + modeName;
+            if (name.includes('squat')) gifSrc = "https://via.placeholder.com/100x100/2979FF/FFFFFF?text=Squat";
+            else if (name.includes('push')) gifSrc = "https://via.placeholder.com/100x100/FF1744/FFFFFF?text=Pushup";
+            else if (name.includes('lunge')) gifSrc = "https://via.placeholder.com/100x100/00E676/FFFFFF?text=Lunge";
+            else if (name.includes('dip')) gifSrc = "https://via.placeholder.com/100x100/FFFF00/000000?text=Dip";
 
             img.src = gifSrc;
         }
 
         // --- ROUTINE & MUSIC SYNC ---
-        
-        // This function patches RoutineManager to trigger music/gifs automatically
         function hookRoutineManager() {
             if (!window.routineManager) return;
             const originalLoad = window.routineManager.loadCurrentExercise.bind(window.routineManager);
             
             window.routineManager.loadCurrentExercise = function() {
-                originalLoad(); // Call original
-                
-                // Get current exercise data
+                originalLoad(); 
                 const current = this.currentPlan.sequence[this.currentIndex];
                 
                 // 1. Update GIF
@@ -282,7 +281,6 @@
                 else window.musicManager.setSpeed('mid');
             };
         }
-        // Initialize Hook
         setTimeout(hookRoutineManager, 1000);
 
         // --- UI ACTIONS ---
