@@ -69,9 +69,11 @@
 
         /* --- GIF INSTRUCTOR --- */
         #instructor-panel {
-            position: absolute; top: 20px; right: 20px; width: 100px; height: 100px;
-            background: rgba(255, 255, 255, 0.9); border-radius: 12px;
-            border: 2px solid var(--primary-color);
+            position: absolute; top: 70px; right: 20px; width: 100px; height: 100px;
+            /* Dark background to contrast with the inverted white lines */
+            background: rgba(0, 0, 0, 0.6); 
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
             z-index: 45; overflow: hidden;
             display: none; 
             box-shadow: 0 5px 15px rgba(0,0,0,0.5);
@@ -80,7 +82,10 @@
         @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
         
         #instructor-gif {
-            width: 100%; height: 100%; object-fit: cover;
+            width: 100%; height: 100%; object-fit: contain;
+            /* Invert colors: Black Stick Figure -> White Neon Lines */
+            filter: invert(1) contrast(1.2);
+            mix-blend-mode: screen; 
         }
 
         /* --- Controls --- */
@@ -137,8 +142,7 @@
 
         <!-- GIF INSTRUCTOR -->
         <div id="instructor-panel">
-            <!-- Ensure you have these GIFS in the same folder or update src -->
-            <img id="instructor-gif" src="https://via.placeholder.com/100x100.png?text=Coach" alt="Instructor">
+            <img id="instructor-gif" src="" alt="Instructor">
         </div>
     </div>
 
@@ -185,7 +189,7 @@
     <script src="Script.js"></script>
     <script src="Routines.js"></script>
 
-    <!-- MUSIC MANAGER (LOCAL FILES) -->
+    <!-- MUSIC MANAGER (Updated Paths) -->
     <script>
         class MusicManager {
             constructor() {
@@ -194,11 +198,11 @@
                 this.audio = new Audio();
                 this.audio.loop = true;
                 
-                // UPDATED: Referring to LOCAL files in the same directory
+                // UPDATED: Files inside 'bgm' folder
                 this.tracks = {
-                    slow: "Slow.mp3",
-                    mid:  "Mid.mp3",
-                    fast: "Fast.mp3"
+                    slow: "bgm/Slow.mp3",
+                    mid:  "bgm/Mid.mp3",
+                    fast: "bgm/Fast.mp3"
                 };
             }
             toggle() {
@@ -219,7 +223,7 @@
             }
             play(type) {
                 const src = this.tracks[type];
-                if (this.audio.src.indexOf(src) === -1) { // Check if src changed
+                if (this.audio.src.indexOf(src) === -1) {
                     this.audio.src = src;
                     this.audio.play().catch(e => console.log("Audio waiting for interaction: ", e));
                 } else {
@@ -230,7 +234,7 @@
         window.musicManager = new MusicManager();
     </script>
 
-    <!-- MAIN UI LOGIC -->
+    <!-- MAIN UI LOGIC (Updated Paths) -->
     <script>
         function toggleSidebar() { document.getElementById('exercise-sidebar').classList.toggle('active'); }
 
@@ -243,7 +247,7 @@
             };
         })();
 
-        // --- INSTRUCTOR GIF LOGIC ---
+        // --- INSTRUCTOR GIF LOGIC (Updated Paths) ---
         function updateInstructor(modeName) {
             const panel = document.getElementById('instructor-panel');
             const img = document.getElementById('instructor-gif');
@@ -251,16 +255,22 @@
 
             panel.classList.add('active');
 
-            // --- GIF MAPPING ---
-            // Ensure these files exist locally or use URLS.
-            let gifSrc = "https://via.placeholder.com/100x100?text=Move"; 
-            
-            if (name.includes('squat')) gifSrc = "https://via.placeholder.com/100x100/2979FF/FFFFFF?text=Squat";
-            else if (name.includes('push')) gifSrc = "https://via.placeholder.com/100x100/FF1744/FFFFFF?text=Pushup";
-            else if (name.includes('lunge')) gifSrc = "https://via.placeholder.com/100x100/00E676/FFFFFF?text=Lunge";
-            else if (name.includes('dip')) gifSrc = "https://via.placeholder.com/100x100/FFFF00/000000?text=Dip";
+            // Default
+            let gifFilename = "Squats.gif"; 
 
-            img.src = gifSrc;
+            // Map to the files in 'Gif/' folder
+            if (name.includes('squat')) gifFilename = "Squats.gif";
+            else if (name.includes('push')) gifFilename = "Pushups.gif";
+            else if (name.includes('lunge')) gifFilename = "lunge.gif";
+            else if (name.includes('dip')) gifFilename = "dip.gif";
+            else if (name.includes('jack')) gifFilename = "Jumpingjacks.gif";
+            else if (name.includes('high') || name.includes('run')) gifFilename = "High_knees.gif";
+            else if (name.includes('sit') || name.includes('crunch')) gifFilename = "Situps.gif";
+            else if (name.includes('burpee')) gifFilename = "Jumpingjacks.gif"; // Fallback
+            else if (name.includes('calf')) gifFilename = "Squats.gif"; // Fallback
+
+            // UPDATED PATH: Use 'Gif/' folder
+            img.src = "Gif/" + gifFilename;
         }
 
         // --- ROUTINE & MUSIC SYNC ---
